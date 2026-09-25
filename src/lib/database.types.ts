@@ -50,6 +50,7 @@ export interface Cliente {
   nombre: string;
   email: string;
   telefono: string;
+  activo: boolean;
   creado_en: string;
 }
 
