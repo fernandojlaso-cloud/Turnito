@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import type { Actividad, Centro, Disponibilidad } from "@/lib/database.types";
 import AdminLayout from "./AdminLayout";
 import { tokens } from "@/styles/tokens";
+import { Field, PrimaryButton } from "@/components/UI";
 
 const { color, font } = tokens;
 const dias = ["D", "L", "M", "X", "J", "V", "S"]; // índice = getDay()
@@ -12,6 +13,7 @@ export default function Actividades({ centro }: { centro: Centro }) {
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [disponibilidad, setDisponibilidad] = useState<Disponibilidad[]>([]);
   const [selId, setSelId] = useState<string | null>(null);
+  const [creando, setCreando] = useState(false);
 
   useEffect(() => {
     async function cargar() {
@@ -22,9 +24,34 @@ export default function Actividades({ centro }: { centro: Centro }) {
       setActividades(acts ?? []);
       setDisponibilidad(disp ?? []);
       setSelId((acts ?? [])[0]?.id ?? null);
+      setCreando(!(acts ?? []).length);
     }
     cargar();
   }, [centro.id]);
+
+  async function crearActividad(datos: { nombre: string; codigo: string; tipo: "individual" | "grupal"; duracion_min: number }) {
+    const { data, error } = await supabase
+      .from("actividades")
+      .insert({
+        centro_id: centro.id,
+        nombre: datos.nombre,
+        codigo: datos.codigo,
+        tipo: datos.tipo,
+        duracion_min: datos.duracion_min,
+        cupo: datos.tipo === "grupal" ? 8 : 1,
+        cancelacion_horas: 2,
+        activa: true,
+        orden: actividades.length
+      })
+      .select()
+      .single();
+    if (!error && data) {
+      setActividades((prev) => [...prev, data as Actividad]);
+      setSelId((data as Actividad).id);
+      setCreando(false);
+    }
+    return !error;
+  }
 
   const actual = actividades.find((a) => a.id === selId) ?? null;
 
@@ -57,15 +84,33 @@ export default function Actividades({ centro }: { centro: Centro }) {
 
   return (
     <AdminLayout centro={centro}>
-      <div style={{ height: 72, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-        <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 32 }}>Actividades</h1>
-        <p style={{ margin: "6px 0 0", fontSize: 15, color: color.textSoft }}>
-          {actividades.filter((a) => a.activa).length} de {actividades.length} activas · activá las que ofrece tu centro y configurá cada una.
-        </p>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 72 }}>
+        <div>
+          <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 32 }}>Actividades</h1>
+          <p style={{ margin: "6px 0 0", fontSize: 15, color: color.textSoft }}>
+            {actividades.length
+              ? `${actividades.filter((a) => a.activa).length} de ${actividades.length} activas · activá las que ofrece tu centro y configurá cada una.`
+              : "Todavía no cargaste ninguna actividad."}
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            setCreando(true);
+            setSelId(null);
+          }}
+          style={{ height: 48, padding: "0 20px", borderRadius: 14, border: 0, background: centro.color_acento, fontWeight: 700, fontSize: 15 }}
+        >
+          + Nueva actividad
+        </button>
       </div>
 
       <div style={{ display: "flex", gap: 24, marginTop: 24, alignItems: "flex-start" }}>
         <section style={{ width: 380, flex: "none", background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+          {!actividades.length && (
+            <p style={{ color: color.textMuted, fontSize: 14, padding: 8 }}>
+              Usá "+ Nueva actividad" para cargar la primera (ej. Kinesiología, Pilates, Personal trainer).
+            </p>
+          )}
           {actividades.map((a) => {
             const selected = a.id === selId;
             return (
@@ -134,7 +179,11 @@ export default function Actividades({ centro }: { centro: Centro }) {
           })}
         </section>
 
-        {actual && (
+        {creando && (
+          <NuevaActividadForm onCancelar={() => setCreando(!!actividades.length)} onCrear={crearActividad} accent={centro.color_acento} />
+        )}
+
+        {!creando && actual && (
           <section style={{ flex: 1, minWidth: 0, background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 32, display: "flex", flexDirection: "column", gap: 28, opacity: actual.activa ? 1 : 0.5 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <div style={{ width: 56, height: 56, borderRadius: 14, background: color.ink, color: centro.color_acento, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font.mono, fontSize: 16, fontWeight: 600 }}>
@@ -218,6 +267,12 @@ export default function Actividades({ centro }: { centro: Centro }) {
             </Row>
           </section>
         )}
+
+        {!creando && !actual && (
+          <section style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", color: color.textMuted, fontSize: 15 }}>
+            Elegí una actividad de la lista, o creá la primera.
+          </section>
+        )}
       </div>
     </AdminLayout>
   );
@@ -285,5 +340,100 @@ function Stepper({ value, min, max, onChange, suffix }: { value: number; min: nu
       </button>
       {suffix && <span style={{ fontSize: 14, color: color.textSoft }}>{suffix}</span>}
     </div>
+  );
+}
+
+function NuevaActividadForm({
+  onCancelar,
+  onCrear,
+  accent
+}: {
+  onCancelar: () => void;
+  onCrear: (datos: { nombre: string; codigo: string; tipo: "individual" | "grupal"; duracion_min: number }) => Promise<boolean>;
+  accent: string;
+}) {
+  const [nombre, setNombre] = useState("");
+  const [codigo, setCodigo] = useState("");
+  const [tipo, setTipo] = useState<"individual" | "grupal">("individual");
+  const [duracion, setDuracion] = useState(50);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const valido = nombre.trim().length > 1 && codigo.trim().length >= 2;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!valido) return;
+    setGuardando(true);
+    setError(null);
+    const ok = await onCrear({ nombre: nombre.trim(), codigo: codigo.trim().toUpperCase(), tipo, duracion_min: duracion });
+    setGuardando(false);
+    if (!ok) setError("No se pudo crear la actividad. Probá de nuevo.");
+  }
+
+  return (
+    <section style={{ flex: 1, minWidth: 0, maxWidth: 480, background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 32, display: "flex", flexDirection: "column", gap: 20 }}>
+      <h2 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 24 }}>Nueva actividad</h2>
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <Field id="na-nombre" label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Kinesiología" />
+        <Field
+          id="na-codigo"
+          label="Código corto (2-3 letras, para identificarla)"
+          value={codigo}
+          onChange={(e) => setCodigo(e.target.value.slice(0, 3))}
+          placeholder="Ej. KI"
+        />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>Tipo de turno</div>
+          <div style={{ display: "flex", padding: 4, gap: 4, borderRadius: 14, background: color.bg, width: 280 }}>
+            {(["individual", "grupal"] as const).map((opt) => (
+              <button
+                type="button"
+                key={opt}
+                onClick={() => setTipo(opt)}
+                aria-pressed={tipo === opt}
+                style={{ flex: 1, height: 40, borderRadius: 10, border: 0, fontSize: 14, fontWeight: 700, background: tipo === opt ? accent : "transparent" }}
+              >
+                {opt === "individual" ? "Individual" : "Grupal"}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>Duración (min)</div>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[30, 45, 50, 60].map((v) => (
+              <button
+                type="button"
+                key={v}
+                onClick={() => setDuracion(v)}
+                aria-pressed={duracion === v}
+                style={{ flex: 1, height: 44, borderRadius: 12, border: `1px solid ${duracion === v ? color.ink : color.borderStrong}`, background: duracion === v ? accent : color.surface, fontFamily: font.mono, fontSize: 14, fontWeight: 600 }}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p style={{ margin: 0, fontSize: 13, color: color.textMuted }}>
+          Después podés ajustar cupo, política de cancelación, días y horarios disponibles desde el detalle.
+        </p>
+        {error && <p style={{ color: "#8A1418", fontSize: 14, margin: 0 }}>{error}</p>}
+        <div style={{ display: "flex", gap: 12 }}>
+          <button
+            type="button"
+            onClick={onCancelar}
+            style={{ flex: 1, height: 48, borderRadius: 14, border: `1px solid ${color.borderStrong}`, background: color.surface, fontWeight: 700, fontSize: 15 }}
+          >
+            Cancelar
+          </button>
+          <div style={{ flex: 1 }}>
+            <PrimaryButton accent={accent} disabled={!valido || guardando} type="submit">
+              {guardando ? "Creando…" : "Crear actividad"}
+            </PrimaryButton>
+          </div>
+        </div>
+      </form>
+    </section>
   );
 }
