@@ -79,6 +79,7 @@ export default function Reservar() {
 
   if (loading) return <Centered>Cargando…</Centered>;
   if (error || !centro) return <Centered>{error ?? "Centro no encontrado."}</Centered>;
+  if (!centro.plan_activo) return <Centered>Este centro no está disponible en este momento.</Centered>;
 
   const puedeAvanzarPaso2 = !!slotElegido && slotElegido.disponible;
   const puedeConfirmar = nombre.trim().length > 1 && /\S+@\S+\.\S+/.test(email) && telefono.trim().length > 5;

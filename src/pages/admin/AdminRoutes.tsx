@@ -30,6 +30,14 @@ export default function AdminRoutes() {
     );
   }
 
+  if (!centro.plan_activo) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: color.textSoft, textAlign: "center", padding: 24 }}>
+        Este centro está dado de baja. Contactá al administrador de Turnito para reactivarlo.
+      </div>
+    );
+  }
+
   return (
     <Routes>
       <Route index element={<Agenda centro={centro} />} />
