@@ -10,6 +10,7 @@ export interface Centro {
   nombre: string;
   slug: string;
   logo_url: string | null;
+  telefono_whatsapp: string | null;
   color_acento: string;
   plan_activo: boolean;
   aprobado: boolean;
@@ -51,7 +52,15 @@ export interface Cliente {
   nombre: string;
   email: string;
   telefono: string;
+  dni: string | null;
   activo: boolean;
+  obra_social: string | null;
+  contacto_emergencia_nombre: string | null;
+  contacto_emergencia_telefono: string | null;
+  alergias: string | null;
+  condiciones_medicas: string | null;
+  medicacion: string | null;
+  observaciones_medicas: string | null;
   creado_en: string;
 }
 

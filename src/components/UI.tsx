@@ -186,3 +186,66 @@ export function Field({
     </div>
   );
 }
+
+export function LogoPicker({
+  label,
+  preview,
+  onFile
+}: {
+  label: string;
+  preview: string | null;
+  onFile: (file: File) => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <label style={{ fontSize: 13, fontWeight: 700 }}>{label}</label>
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            flex: "none",
+            borderRadius: 12,
+            background: tokens.color.bg,
+            border: `1px solid ${tokens.color.borderStrong}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden"
+          }}
+        >
+          {preview ? (
+            <img src={preview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          ) : (
+            <span style={{ fontFamily: tokens.font.mono, fontSize: 10, color: tokens.color.textMuted }}>LOGO</span>
+          )}
+        </div>
+        <label
+          style={{
+            height: 40,
+            padding: "0 14px",
+            display: "flex",
+            alignItems: "center",
+            borderRadius: 10,
+            border: `1px solid ${tokens.color.borderStrong}`,
+            background: tokens.color.surface,
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: "pointer"
+          }}
+        >
+          {preview ? "Cambiar imagen" : "Subir imagen"}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onFile(f);
+            }}
+            style={{ display: "none" }}
+          />
+        </label>
+      </div>
+    </div>
+  );
+}

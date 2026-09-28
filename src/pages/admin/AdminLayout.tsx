@@ -9,7 +9,8 @@ const { color, font } = tokens;
 const links = [
   { to: "/admin", label: "Agenda", end: true },
   { to: "/admin/actividades", label: "Actividades" },
-  { to: "/admin/clientes", label: "Clientes" }
+  { to: "/admin/clientes", label: "Clientes" },
+  { to: "/admin/estadisticas", label: "Estadísticas" }
 ];
 
 export default function AdminLayout({ centro, children }: { centro: Centro; children: ReactNode }) {
@@ -62,9 +63,18 @@ export default function AdminLayout({ centro, children }: { centro: Centro; chil
             Página de reservas
           </a>
         </nav>
-        <div style={{ marginTop: "auto", padding: "0 8px" }}>
-          <div style={{ fontWeight: 700, fontSize: 15 }}>{centro.nombre}</div>
-          <div style={{ fontSize: 13, color: "#9AA0A6" }}>Panel del centro</div>
+        <div style={{ marginTop: "auto", padding: "0 8px", display: "flex", alignItems: "center", gap: 10 }}>
+          {centro.logo_url ? (
+            <img src={centro.logo_url} alt="" style={{ width: 36, height: 36, borderRadius: 10, objectFit: "cover", flex: "none" }} />
+          ) : (
+            <div style={{ width: 36, height: 36, flex: "none", borderRadius: 10, background: "#26272B" }} />
+          )}
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>{centro.nombre}</div>
+            <div style={{ fontSize: 13, color: "#9AA0A6" }}>Panel del centro</div>
+          </div>
+        </div>
+        <div>
           <button
             onClick={() => cerrarSesion()}
             style={{ marginTop: 16, width: "100%", height: 44, borderRadius: 12, border: "1px solid #3A3D42", background: "transparent", color: "#E4E5E7", fontWeight: 600, fontSize: 14 }}

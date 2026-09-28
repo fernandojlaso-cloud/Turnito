@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useCentrosDirector } from "@/lib/useDirector";
 import type { Centro } from "@/lib/database.types";
 import { tokens } from "@/styles/tokens";
-import { Field, PrimaryButton } from "@/components/UI";
+import { Field, LogoPicker, PrimaryButton } from "@/components/UI";
+import { subirLogo } from "@/lib/logo";
 import { cerrarSesion } from "@/components/Bloqueo";
 
 const { color, font } = tokens;
@@ -141,14 +142,32 @@ function DetalleCentro({
 }) {
   const [nombre, setNombre] = useState(centro.nombre);
   const [colorAcento, setColorAcento] = useState(centro.color_acento);
+  const [telefonoWhatsapp, setTelefonoWhatsapp] = useState(centro.telefono_whatsapp ?? "");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(centro.logo_url);
   const [guardando, setGuardando] = useState(false);
   const [aprobando, setAprobando] = useState(false);
 
-  const huboCambios = nombre !== centro.nombre || colorAcento !== centro.color_acento;
+  const huboCambios =
+    nombre !== centro.nombre ||
+    colorAcento !== centro.color_acento ||
+    telefonoWhatsapp !== (centro.telefono_whatsapp ?? "") ||
+    !!logoFile;
+
+  function elegirLogo(file: File) {
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+  }
 
   async function guardar() {
     setGuardando(true);
-    await onActualizar(centro.id, { nombre, color_acento: colorAcento });
+    let logo_url = centro.logo_url;
+    if (logoFile) {
+      const url = await subirLogo(centro.id, logoFile);
+      if (url) logo_url = url;
+    }
+    await onActualizar(centro.id, { nombre, color_acento: colorAcento, telefono_whatsapp: telefonoWhatsapp.trim() || null, logo_url });
+    setLogoFile(null);
     setGuardando(false);
   }
 
@@ -205,7 +224,16 @@ function DetalleCentro({
 
       <section style={{ background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted }}>DATOS DEL CENTRO</div>
+        <LogoPicker label="Logo" preview={logoPreview} onFile={elegirLogo} />
         <Field id="nombre-centro" label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <Field
+          id="whatsapp-centro"
+          label="WhatsApp del centro (a donde escriben los clientes)"
+          type="tel"
+          value={telefonoWhatsapp}
+          onChange={(e) => setTelefonoWhatsapp(e.target.value)}
+          placeholder="Ej. 11 2345 6789"
+        />
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <label htmlFor="color-centro" style={{ fontSize: 13, fontWeight: 700 }}>
             Color de acento

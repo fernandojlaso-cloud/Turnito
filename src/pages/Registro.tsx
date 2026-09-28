@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { subirLogo } from "@/lib/logo";
 import { tokens } from "@/styles/tokens";
-import { Field, PrimaryButton } from "@/components/UI";
+import { Field, LogoPicker, PrimaryButton } from "@/components/UI";
 
 const { color, font } = tokens;
 
@@ -16,13 +17,25 @@ function slugify(nombre: string): string {
 
 export default function Registro() {
   const [nombreCentro, setNombreCentro] = useState("");
+  const [telefonoWhatsapp, setTelefonoWhatsapp] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resultado, setResultado] = useState<"ok" | "confirmar-email" | null>(null);
 
-  const valido = nombreCentro.trim().length > 1 && /\S+@\S+\.\S+/.test(email) && password.length >= 6;
+  const valido =
+    nombreCentro.trim().length > 1 &&
+    /\S+@\S+\.\S+/.test(email) &&
+    password.length >= 6 &&
+    telefonoWhatsapp.trim().length > 5;
+
+  function elegirLogo(file: File) {
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,7 +68,7 @@ export default function Registro() {
     const slug = slugify(nombreCentro);
     const { data: centro, error: centroError } = await supabase
       .from("centros")
-      .insert({ nombre: nombreCentro.trim(), slug, aprobado: false })
+      .insert({ nombre: nombreCentro.trim(), slug, telefono_whatsapp: telefonoWhatsapp.trim(), aprobado: false })
       .select()
       .single();
 
@@ -73,12 +86,20 @@ export default function Registro() {
       .from("centro_usuarios")
       .insert({ centro_id: centro.id, user_id: authData.session.user.id, rol: "admin" });
 
-    setEnviando(false);
     if (vinculoError) {
+      setEnviando(false);
       setError("La cuenta se creó pero no pudimos vincularla a tu centro. Contactanos.");
       return;
     }
 
+    // El logo es opcional: si falla la subida no bloqueamos el alta del
+    // centro, que ya quedó creado y vinculado.
+    if (logoFile) {
+      const url = await subirLogo(centro.id, logoFile);
+      if (url) await supabase.from("centros").update({ logo_url: url }).eq("id", centro.id);
+    }
+
+    setEnviando(false);
     setResultado("ok");
   }
 
@@ -110,7 +131,7 @@ export default function Registro() {
     <div style={{ minHeight: "100vh", background: color.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <form
         onSubmit={handleSubmit}
-        style={{ width: 400, background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 32, display: "flex", flexDirection: "column", gap: 20 }}
+        style={{ width: 420, background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 32, display: "flex", flexDirection: "column", gap: 20 }}
       >
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
@@ -122,7 +143,19 @@ export default function Registro() {
             Creá tu cuenta para empezar a usar Turnito. Tu centro queda pendiente de aprobación.
           </p>
         </div>
+        <LogoPicker label="Logo de tu centro (opcional)" preview={logoPreview} onFile={elegirLogo} />
         <Field id="reg-centro" label="Nombre del centro" value={nombreCentro} onChange={(e) => setNombreCentro(e.target.value)} placeholder="Ej. Studio Fit Palermo" />
+        <Field
+          id="reg-whatsapp"
+          label="WhatsApp del centro"
+          type="tel"
+          value={telefonoWhatsapp}
+          onChange={(e) => setTelefonoWhatsapp(e.target.value)}
+          placeholder="Ej. 11 2345 6789"
+        />
+        <p style={{ margin: "-12px 0 0", fontSize: 12, color: color.textMuted }}>
+          A este número te van a escribir tus clientes para avisarte sobre sus turnos.
+        </p>
         <Field id="reg-email" label="Tu email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@correo.com" />
         <Field id="reg-password" label="Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
         {error && <p style={{ color: "#8A1418", fontSize: 14, margin: 0 }}>{error}</p>}

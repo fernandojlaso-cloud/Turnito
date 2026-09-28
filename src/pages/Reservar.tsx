@@ -28,6 +28,7 @@ export default function Reservar() {
   const [slotIdx, setSlotIdx] = useState<number | null>(null);
   const [turnosDelDia, setTurnosDelDia] = useState<Turno[]>([]);
   const [nombre, setNombre] = useState("");
+  const [dni, setDni] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
   const [turnoIdCreado, setTurnoIdCreado] = useState<string | null>(null);
@@ -69,7 +70,8 @@ export default function Reservar() {
       inicio: slotElegido.inicio,
       nombre,
       email,
-      telefono
+      telefono,
+      dni
     });
     if (id) {
       setTurnoIdCreado(id);
@@ -83,7 +85,7 @@ export default function Reservar() {
   if (!centro.plan_activo) return <Centered>Este centro no está disponible en este momento.</Centered>;
 
   const puedeAvanzarPaso2 = !!slotElegido && slotElegido.disponible;
-  const puedeConfirmar = nombre.trim().length > 1 && /\S+@\S+\.\S+/.test(email) && telefono.trim().length > 5;
+  const puedeConfirmar = nombre.trim().length > 1 && /\S+@\S+\.\S+/.test(email) && telefono.trim().length > 5 && dni.trim().length > 5;
 
   return (
     <div
@@ -203,6 +205,7 @@ export default function Reservar() {
               <Field id="nombre" label="Nombre y apellido" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Camila Sosa" />
               <Field id="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@correo.com" />
               <Field id="telefono" label="Teléfono (WhatsApp)" type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej. 11 2345 6789" />
+              <Field id="dni" label="DNI" value={dni} onChange={(e) => setDni(e.target.value)} placeholder="Ej. 30123456" />
             </div>
             <div style={{ marginTop: 20, background: color.ink, color: "#FFFFFF", borderRadius: 16, padding: "18px 20px" }}>
               <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: "#9AA0A6" }}>TU TURNO</div>
@@ -219,13 +222,12 @@ export default function Reservar() {
 
         {step === 4 && actividad && slotElegido && (
           <Confirmacion
-            centroTelefono={undefined}
+            centroTelefonoWhatsapp={centro.telefono_whatsapp}
             accent={accent}
             actividadNombre={actividad.nombre}
             diaLargo={formatearDiaLargo(dia)}
             hora={`${formatearHora(slotElegido.inicio)} · ${actividad.duracion_min} min`}
             politica={`Gratis hasta ${actividad.cancelacion_horas} h antes`}
-            telefonoCliente={telefono}
             turnoId={turnoIdCreado}
           />
         )}
@@ -281,7 +283,7 @@ export default function Reservar() {
   );
 }
 
-function Header({ centro, accent }: { centro: { nombre: string }; accent: string }) {
+function Header({ centro, accent }: { centro: { nombre: string; logo_url: string | null }; accent: string }) {
   return (
     <div
       style={{
@@ -296,7 +298,12 @@ function Header({ centro, accent }: { centro: { nombre: string }; accent: string
         justifyContent: "space-between"
       }}
     >
-      <div style={{ fontFamily: font.display, fontWeight: 600, fontSize: 17 }}>{centro.nombre}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {centro.logo_url && (
+          <img src={centro.logo_url} alt="" style={{ width: 32, height: 32, borderRadius: 8, objectFit: "cover" }} />
+        )}
+        <div style={{ fontFamily: font.display, fontWeight: 600, fontSize: 17 }}>{centro.nombre}</div>
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <div style={{ width: 8, height: 8, borderRadius: "50%", background: accent }} />
         <span style={{ fontFamily: font.display, fontWeight: 700, fontSize: 14 }}>turnito</span>
@@ -306,24 +313,25 @@ function Header({ centro, accent }: { centro: { nombre: string }; accent: string
 }
 
 function Confirmacion({
+  centroTelefonoWhatsapp,
   accent,
   actividadNombre,
   diaLargo,
   hora,
   politica,
-  telefonoCliente,
   turnoId
 }: {
-  centroTelefono: string | undefined;
+  centroTelefonoWhatsapp: string | null;
   accent: string;
   actividadNombre: string;
   diaLargo: string;
   hora: string;
   politica: string;
-  telefonoCliente: string;
   turnoId: string | null;
 }) {
-  const wa = linkWhatsapp(telefonoCliente, `¡Hola! Quiero avisar sobre mi turno de ${actividadNombre} (${diaLargo}, ${hora}).`);
+  const wa = centroTelefonoWhatsapp
+    ? linkWhatsapp(centroTelefonoWhatsapp, `¡Hola! Quiero avisar sobre mi turno de ${actividadNombre} (${diaLargo}, ${hora}).`)
+    : null;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 16, paddingTop: 12 }}>
@@ -354,25 +362,27 @@ function Confirmacion({
         <Row label="CANCELACIÓN" value={politica} last />
       </div>
 
-      <a
-        href={wa}
-        target="_blank"
-        rel="noreferrer"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 10,
-          height: 56,
-          borderRadius: 14,
-          background: color.ink,
-          color: "#FFFFFF",
-          fontWeight: 700,
-          fontSize: 16
-        }}
-      >
-        Avisar por WhatsApp
-      </a>
+      {wa && (
+        <a
+          href={wa}
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            height: 56,
+            borderRadius: 14,
+            background: color.ink,
+            color: "#FFFFFF",
+            fontWeight: 700,
+            fontSize: 16
+          }}
+        >
+          Avisar por WhatsApp
+        </a>
+      )}
       {turnoId && <p style={{ fontSize: 12, color: color.textMuted, textAlign: "center" }}>Código de turno: {turnoId.slice(0, 8)}</p>}
     </div>
   );

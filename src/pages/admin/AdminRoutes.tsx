@@ -6,6 +6,7 @@ import Bloqueo from "@/components/Bloqueo";
 import Agenda from "./Agenda";
 import Actividades from "./Actividades";
 import Clientes from "./Clientes";
+import Estadisticas from "./Estadisticas";
 
 const { color } = tokens;
 
@@ -39,6 +40,7 @@ export default function AdminRoutes() {
       <Route index element={<Agenda centro={centro} />} />
       <Route path="actividades" element={<Actividades centro={centro} />} />
       <Route path="clientes" element={<Clientes centro={centro} />} />
+      <Route path="estadisticas" element={<Estadisticas centro={centro} />} />
     </Routes>
   );
 }

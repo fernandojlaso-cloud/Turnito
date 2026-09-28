@@ -47,7 +47,13 @@ export default function Clientes({ centro }: { centro: Centro }) {
   const filtrados = clientes.filter((c) => {
     if (!mostrarBaja && !c.activo) return false;
     const q = busqueda.toLowerCase();
-    return !q || c.nombre.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || c.telefono.includes(q);
+    return (
+      !q ||
+      c.nombre.toLowerCase().includes(q) ||
+      c.email.toLowerCase().includes(q) ||
+      c.telefono.includes(q) ||
+      (c.dni ?? "").includes(q)
+    );
   });
 
   const actual = clientes.find((c) => c.id === selId) ?? null;
@@ -56,7 +62,7 @@ export default function Clientes({ centro }: { centro: Centro }) {
   const contar = (estado: EstadoTurno) => historial.filter((t) => t.estado === estado).length;
   const proximos = historial.filter((t) => new Date(t.inicio) >= new Date() && t.estado !== "cancelado").length;
 
-  async function crearCliente(datos: { nombre: string; email: string; telefono: string }) {
+  async function crearCliente(datos: { nombre: string; email: string; telefono: string; dni: string }) {
     const { data, error } = await supabase
       .from("clientes")
       .insert({ centro_id: centro.id, ...datos, activo: true })
@@ -81,7 +87,7 @@ export default function Clientes({ centro }: { centro: Centro }) {
         <div>
           <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 32 }}>Clientes</h1>
           <p style={{ margin: "6px 0 0", fontSize: 15, color: color.textSoft }}>
-            Cada cliente queda identificado por su email y teléfono, con el historial de todos sus turnos.
+            Cada cliente tiene su ficha con DNI, datos médicos básicos y el historial de todos sus turnos.
           </p>
         </div>
         <button
@@ -99,7 +105,7 @@ export default function Clientes({ centro }: { centro: Centro }) {
         <section style={{ width: 360, flex: "none", background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
           <input
             type="search"
-            placeholder="Buscar por nombre, email o teléfono"
+            placeholder="Buscar por nombre, email, DNI o teléfono"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             style={{ height: 48, boxSizing: "border-box", padding: "0 14px", borderRadius: 12, border: `1px solid ${color.borderStrong}`, fontSize: 14 }}
@@ -158,7 +164,7 @@ export default function Clientes({ centro }: { centro: Centro }) {
             </div>
 
             <div>
-              <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted, paddingBottom: 12 }}>HISTORIAL DE TURNOS</div>
+              <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted, paddingBottom: 12 }}>HISTORIAL DE SERVICIOS UTILIZADOS</div>
               <div style={{ height: 40, display: "grid", gridTemplateColumns: "90px minmax(0,1fr) minmax(0,1fr) 130px", gap: 16, alignItems: "center", borderBottom: `1px solid ${color.border}`, fontFamily: font.mono, fontSize: 12, letterSpacing: "0.08em", color: color.textMuted }}>
                 <span>FECHA</span>
                 <span>ACTIVIDAD</span>
@@ -211,10 +217,11 @@ function NuevoClienteForm({
   accent
 }: {
   onCancelar: () => void;
-  onCrear: (datos: { nombre: string; email: string; telefono: string }) => Promise<boolean>;
+  onCrear: (datos: { nombre: string; email: string; telefono: string; dni: string }) => Promise<boolean>;
   accent: string;
 }) {
   const [nombre, setNombre] = useState("");
+  const [dni, setDni] = useState("");
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -227,7 +234,12 @@ function NuevoClienteForm({
     if (!valido) return;
     setGuardando(true);
     setError(null);
-    const ok = await onCrear({ nombre: nombre.trim(), email: email.trim().toLowerCase(), telefono: telefono.trim() });
+    const ok = await onCrear({
+      nombre: nombre.trim(),
+      email: email.trim().toLowerCase(),
+      telefono: telefono.trim(),
+      dni: dni.trim()
+    });
     setGuardando(false);
     if (!ok) setError("Ya existe un cliente con ese email en este centro.");
   }
@@ -237,6 +249,7 @@ function NuevoClienteForm({
       <h2 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 24 }}>Nuevo cliente</h2>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <Field id="nc-nombre" label="Nombre y apellido" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Camila Sosa" />
+        <Field id="nc-dni" label="DNI" value={dni} onChange={(e) => setDni(e.target.value)} placeholder="Ej. 30123456" />
         <Field id="nc-email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@correo.com" />
         <Field id="nc-telefono" label="Teléfono (WhatsApp)" type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej. 11 2345 6789" />
         {error && <p style={{ color: "#8A1418", fontSize: 14, margin: 0 }}>{error}</p>}
@@ -259,6 +272,16 @@ function NuevoClienteForm({
   );
 }
 
+const camposMedicos: { key: keyof Cliente; label: string; area?: boolean }[] = [
+  { key: "obra_social", label: "Obra social / prepaga" },
+  { key: "contacto_emergencia_nombre", label: "Contacto de emergencia" },
+  { key: "contacto_emergencia_telefono", label: "Teléfono de emergencia" },
+  { key: "alergias", label: "Alergias", area: true },
+  { key: "condiciones_medicas", label: "Condiciones médicas / lesiones", area: true },
+  { key: "medicacion", label: "Medicación habitual", area: true },
+  { key: "observaciones_medicas", label: "Observaciones", area: true }
+];
+
 function DetalleCliente({
   cliente,
   accent,
@@ -270,21 +293,40 @@ function DetalleCliente({
 }) {
   const [editando, setEditando] = useState(false);
   const [nombre, setNombre] = useState(cliente.nombre);
+  const [dni, setDni] = useState(cliente.dni ?? "");
   const [email, setEmail] = useState(cliente.email);
   const [telefono, setTelefono] = useState(cliente.telefono);
   const [guardando, setGuardando] = useState(false);
 
+  const [editandoFicha, setEditandoFicha] = useState(false);
+  const [ficha, setFicha] = useState<Record<string, string>>(
+    Object.fromEntries(camposMedicos.map((c) => [c.key, (cliente[c.key] as string | null) ?? ""]))
+  );
+  const [guardandoFicha, setGuardandoFicha] = useState(false);
+
   async function guardar() {
     setGuardando(true);
-    await onActualizar(cliente.id, { nombre, email, telefono });
+    await onActualizar(cliente.id, { nombre, dni: dni.trim() || null, email, telefono });
     setGuardando(false);
     setEditando(false);
+  }
+
+  async function guardarFicha() {
+    setGuardandoFicha(true);
+    const cambios: Partial<Cliente> = {};
+    for (const c of camposMedicos) {
+      (cambios as any)[c.key] = ficha[c.key]?.trim() || null;
+    }
+    await onActualizar(cliente.id, cambios);
+    setGuardandoFicha(false);
+    setEditandoFicha(false);
   }
 
   if (editando) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 420 }}>
         <Field id="ed-nombre" label="Nombre y apellido" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <Field id="ed-dni" label="DNI" value={dni} onChange={(e) => setDni(e.target.value)} />
         <Field id="ed-email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         <Field id="ed-telefono" label="Teléfono" type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
         <div style={{ display: "flex", gap: 12 }}>
@@ -292,6 +334,7 @@ function DetalleCliente({
             onClick={() => {
               setEditando(false);
               setNombre(cliente.nombre);
+              setDni(cliente.dni ?? "");
               setEmail(cliente.email);
               setTelefono(cliente.telefono);
             }}
@@ -310,56 +353,129 @@ function DetalleCliente({
   }
 
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-        <div style={{ width: 72, height: 72, flex: "none", borderRadius: "50%", background: color.ink, color: accent, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font.mono, fontSize: 22, fontWeight: 600 }}>
-          {cliente.nombre.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          <div style={{ width: 72, height: 72, flex: "none", borderRadius: "50%", background: color.ink, color: accent, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font.mono, fontSize: 22, fontWeight: 600 }}>
+            {cliente.nombre.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}
+          </div>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <h2 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 28 }}>{cliente.nombre}</h2>
+              {!cliente.activo && (
+                <span style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: "#F6DADA", color: "#8A1418" }}>
+                  Dado de baja
+                </span>
+              )}
+            </div>
+            <div style={{ marginTop: 6, display: "flex", gap: 16, fontSize: 14, color: color.textSoft, flexWrap: "wrap" }}>
+              <span>{cliente.email}</span>
+              <span style={{ fontFamily: font.mono }}>{cliente.telefono}</span>
+              <span style={{ fontFamily: font.mono }}>DNI {cliente.dni || "sin cargar"}</span>
+            </div>
+          </div>
         </div>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <h2 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 28 }}>{cliente.nombre}</h2>
-            {!cliente.activo && (
-              <span style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: "#F6DADA", color: "#8A1418" }}>
-                Dado de baja
-              </span>
-            )}
-          </div>
-          <div style={{ marginTop: 6, display: "flex", gap: 16, fontSize: 14, color: color.textSoft }}>
-            <span>{cliente.email}</span>
-            <span style={{ fontFamily: font.mono }}>{cliente.telefono}</span>
-          </div>
+        <div style={{ display: "flex", gap: 10, flex: "none" }}>
+          <button
+            onClick={() => setEditando(true)}
+            style={{ height: 44, padding: "0 16px", borderRadius: 12, border: `1px solid ${color.borderStrong}`, background: color.surface, fontWeight: 700, fontSize: 14 }}
+          >
+            Editar
+          </button>
+          <button
+            onClick={() => onActualizar(cliente.id, { activo: !cliente.activo })}
+            style={{
+              height: 44,
+              padding: "0 16px",
+              borderRadius: 12,
+              border: cliente.activo ? "1px solid #8A1418" : "none",
+              background: cliente.activo ? color.surface : "#2E9E5B",
+              color: cliente.activo ? "#8A1418" : "#FFFFFF",
+              fontWeight: 700,
+              fontSize: 14
+            }}
+          >
+            {cliente.activo ? "Dar de baja" : "Reactivar"}
+          </button>
+          <a
+            href={linkWhatsapp(cliente.telefono, `¡Hola ${cliente.nombre.split(" ")[0]}!`)}
+            target="_blank"
+            rel="noreferrer"
+            style={{ height: 44, boxSizing: "border-box", padding: "0 16px", display: "flex", alignItems: "center", gap: 10, borderRadius: 12, background: accent, fontWeight: 700, fontSize: 14 }}
+          >
+            WhatsApp
+          </a>
         </div>
       </div>
-      <div style={{ display: "flex", gap: 10, flex: "none" }}>
-        <button
-          onClick={() => setEditando(true)}
-          style={{ height: 44, padding: "0 16px", borderRadius: 12, border: `1px solid ${color.borderStrong}`, background: color.surface, fontWeight: 700, fontSize: 14 }}
-        >
-          Editar
-        </button>
-        <button
-          onClick={() => onActualizar(cliente.id, { activo: !cliente.activo })}
-          style={{
-            height: 44,
-            padding: "0 16px",
-            borderRadius: 12,
-            border: cliente.activo ? "1px solid #8A1418" : "none",
-            background: cliente.activo ? color.surface : "#2E9E5B",
-            color: cliente.activo ? "#8A1418" : "#FFFFFF",
-            fontWeight: 700,
-            fontSize: 14
-          }}
-        >
-          {cliente.activo ? "Dar de baja" : "Reactivar"}
-        </button>
-        <a
-          href={linkWhatsapp(cliente.telefono, `¡Hola ${cliente.nombre.split(" ")[0]}!`)}
-          target="_blank"
-          rel="noreferrer"
-          style={{ height: 44, boxSizing: "border-box", padding: "0 16px", display: "flex", alignItems: "center", gap: 10, borderRadius: 12, background: accent, fontWeight: 700, fontSize: 14 }}
-        >
-          WhatsApp
-        </a>
+
+      <div style={{ background: color.bg, borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted }}>FICHA MÉDICA</div>
+          {!editandoFicha && (
+            <button
+              onClick={() => setEditandoFicha(true)}
+              style={{ height: 36, padding: "0 14px", borderRadius: 10, border: `1px solid ${color.borderStrong}`, background: color.surface, fontWeight: 700, fontSize: 13 }}
+            >
+              Editar ficha
+            </button>
+          )}
+        </div>
+
+        {editandoFicha ? (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 16 }}>
+              {camposMedicos.map((c) =>
+                c.area ? (
+                  <div key={c.key} style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 6 }}>
+                    <label htmlFor={`fm-${c.key}`} style={{ fontSize: 13, fontWeight: 700 }}>{c.label}</label>
+                    <textarea
+                      id={`fm-${c.key}`}
+                      value={ficha[c.key]}
+                      onChange={(e) => setFicha((prev) => ({ ...prev, [c.key]: e.target.value }))}
+                      rows={2}
+                      style={{ boxSizing: "border-box", padding: "10px 14px", borderRadius: 12, border: `1px solid ${color.borderStrong}`, fontFamily: font.body, fontSize: 14, resize: "vertical" }}
+                    />
+                  </div>
+                ) : (
+                  <Field
+                    key={c.key}
+                    id={`fm-${c.key}`}
+                    label={c.label}
+                    value={ficha[c.key]}
+                    onChange={(e) => setFicha((prev) => ({ ...prev, [c.key]: e.target.value }))}
+                  />
+                )
+              )}
+            </div>
+            <div style={{ display: "flex", gap: 12 }}>
+              <button
+                onClick={() => {
+                  setEditandoFicha(false);
+                  setFicha(Object.fromEntries(camposMedicos.map((c) => [c.key, (cliente[c.key] as string | null) ?? ""])));
+                }}
+                style={{ height: 44, padding: "0 18px", borderRadius: 12, border: `1px solid ${color.borderStrong}`, background: color.surface, fontWeight: 700, fontSize: 14 }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={guardarFicha}
+                disabled={guardandoFicha}
+                style={{ height: 44, padding: "0 18px", borderRadius: 12, border: 0, background: accent, fontWeight: 700, fontSize: 14 }}
+              >
+                {guardandoFicha ? "Guardando…" : "Guardar ficha"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 12 }}>
+            {camposMedicos.map((c) => (
+              <div key={c.key} style={{ gridColumn: c.area ? "1 / -1" : undefined }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: color.textMuted }}>{c.label}</div>
+                <div style={{ fontSize: 14, marginTop: 2 }}>{(cliente[c.key] as string | null) || <span style={{ color: color.textMuted }}>Sin cargar</span>}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

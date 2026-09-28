@@ -9,6 +9,7 @@ interface ReservarInput {
   nombre: string;
   email: string;
   telefono: string;
+  dni: string;
 }
 
 export function useReservar() {
@@ -26,7 +27,8 @@ export function useReservar() {
       p_inicio: input.inicio.toISOString(),
       p_nombre: input.nombre,
       p_email: input.email,
-      p_telefono: input.telefono
+      p_telefono: input.telefono,
+      p_dni: input.dni
     });
 
     setReservando(false);
