@@ -3,6 +3,7 @@ import { useCentrosDirector } from "@/lib/useDirector";
 import type { Centro } from "@/lib/database.types";
 import { tokens } from "@/styles/tokens";
 import { Field, PrimaryButton } from "@/components/UI";
+import { cerrarSesion } from "@/components/Bloqueo";
 
 const { color, font } = tokens;
 
@@ -107,6 +108,13 @@ export default function Centros() {
           })}
           {!cargando && !centros.length && <p style={{ color: "#9AA0A6", fontSize: 13, padding: "0 8px" }}>Todavía no hay centros cargados.</p>}
         </div>
+
+        <button
+          onClick={() => cerrarSesion()}
+          style={{ marginTop: "auto", height: 44, borderRadius: 12, border: "1px solid #3A3D42", background: "transparent", color: "#E4E5E7", fontWeight: 600, fontSize: 14 }}
+        >
+          Cerrar sesión
+        </button>
       </aside>
 
       <main style={{ flex: 1, minWidth: 0, boxSizing: "border-box", padding: 40 }}>

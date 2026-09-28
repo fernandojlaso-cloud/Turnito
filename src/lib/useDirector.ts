@@ -18,6 +18,7 @@ export function useSesionDirector() {
       if (!user) {
         if (activo) {
           setAutenticado(false);
+          setEsDirector(false);
           setCargando(false);
         }
         return;

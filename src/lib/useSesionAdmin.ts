@@ -19,6 +19,7 @@ export function useSesionAdmin() {
       if (!user) {
         if (activo) {
           setAutenticado(false);
+          setCentro(null);
           setCargando(false);
         }
         return;
@@ -33,7 +34,10 @@ export function useSesionAdmin() {
         .single();
 
       if (!cu) {
-        if (activo) setCargando(false);
+        if (activo) {
+          setCentro(null);
+          setCargando(false);
+        }
         return;
       }
 

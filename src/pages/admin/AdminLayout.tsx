@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { tokens } from "@/styles/tokens";
 import type { Centro } from "@/lib/database.types";
+import { cerrarSesion } from "@/components/Bloqueo";
 
 const { color, font } = tokens;
 
@@ -64,6 +65,12 @@ export default function AdminLayout({ centro, children }: { centro: Centro; chil
         <div style={{ marginTop: "auto", padding: "0 8px" }}>
           <div style={{ fontWeight: 700, fontSize: 15 }}>{centro.nombre}</div>
           <div style={{ fontSize: 13, color: "#9AA0A6" }}>Panel del centro</div>
+          <button
+            onClick={() => cerrarSesion()}
+            style={{ marginTop: 16, width: "100%", height: 44, borderRadius: 12, border: "1px solid #3A3D42", background: "transparent", color: "#E4E5E7", fontWeight: 600, fontSize: 14 }}
+          >
+            Cerrar sesión
+          </button>
         </div>
       </aside>
       <main style={{ flex: 1, minWidth: 0, boxSizing: "border-box", padding: 40 }}>{children}</main>

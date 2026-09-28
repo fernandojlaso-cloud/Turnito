@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router-dom";
 import { useSesionAdmin } from "@/lib/useSesionAdmin";
 import { tokens } from "@/styles/tokens";
 import Login from "./Login";
+import Bloqueo from "@/components/Bloqueo";
 import Agenda from "./Agenda";
 import Actividades from "./Actividades";
 import Clientes from "./Clientes";
@@ -22,28 +23,15 @@ export default function AdminRoutes() {
   if (!autenticado) return <Login />;
 
   if (!centro) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: color.textSoft, textAlign: "center", padding: 24 }}>
-        Tu usuario todavía no está vinculado a ningún centro. Pedile al administrador que te agregue en la tabla
-        centro_usuarios.
-      </div>
-    );
+    return <Bloqueo>Tu usuario todavía no está vinculado a ningún centro. Pedile al administrador que te agregue en la tabla centro_usuarios.</Bloqueo>;
   }
 
   if (!centro.aprobado) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: color.textSoft, textAlign: "center", padding: 24 }}>
-        Tu centro todavía está pendiente de aprobación. Te vamos a avisar en cuanto quede activo.
-      </div>
-    );
+    return <Bloqueo>Tu centro todavía está pendiente de aprobación. Te vamos a avisar en cuanto quede activo.</Bloqueo>;
   }
 
   if (!centro.plan_activo) {
-    return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: color.textSoft, textAlign: "center", padding: 24 }}>
-        Este centro está dado de baja. Contactá al administrador de Turnito para reactivarlo.
-      </div>
-    );
+    return <Bloqueo>Este centro está dado de baja. Contactá al administrador de Turnito para reactivarlo.</Bloqueo>;
   }
 
   return (
