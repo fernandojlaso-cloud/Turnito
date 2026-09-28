@@ -7,7 +7,7 @@ import { Field, PrimaryButton } from "@/components/UI";
 const { color, font } = tokens;
 
 export default function Centros() {
-  const { centros, cargando, crear, actualizar, alternarPlan } = useCentrosDirector();
+  const { centros, cargando, crear, actualizar, alternarPlan, aprobar } = useCentrosDirector();
   const [nombreNuevo, setNombreNuevo] = useState("");
   const [creando, setCreando] = useState(false);
   const [selId, setSelId] = useState<string | null>(null);
@@ -98,9 +98,9 @@ export default function Centros() {
                     width: 8,
                     height: 8,
                     borderRadius: "50%",
-                    background: c.plan_activo ? "#2E9E5B" : "#8A1418"
+                    background: !c.aprobado ? "#D98A00" : c.plan_activo ? "#2E9E5B" : "#8A1418"
                   }}
-                  title={c.plan_activo ? "Activo" : "Dado de baja"}
+                  title={!c.aprobado ? "Pendiente de aprobación" : c.plan_activo ? "Activo" : "Dado de baja"}
                 />
               </button>
             );
@@ -113,7 +113,7 @@ export default function Centros() {
         {!actual ? (
           <div style={{ color: color.textMuted, fontSize: 15 }}>Elegí un centro de la lista, o creá uno nuevo.</div>
         ) : (
-          <DetalleCentro key={actual.id} centro={actual} onActualizar={actualizar} onAlternarPlan={alternarPlan} />
+          <DetalleCentro key={actual.id} centro={actual} onActualizar={actualizar} onAlternarPlan={alternarPlan} onAprobar={aprobar} />
         )}
       </main>
     </div>
@@ -123,15 +123,18 @@ export default function Centros() {
 function DetalleCentro({
   centro,
   onActualizar,
-  onAlternarPlan
+  onAlternarPlan,
+  onAprobar
 }: {
   centro: Centro;
   onActualizar: (id: string, cambios: Partial<Centro>) => Promise<void>;
   onAlternarPlan: (id: string, activo: boolean) => Promise<void>;
+  onAprobar: (id: string) => Promise<void>;
 }) {
   const [nombre, setNombre] = useState(centro.nombre);
   const [colorAcento, setColorAcento] = useState(centro.color_acento);
   const [guardando, setGuardando] = useState(false);
+  const [aprobando, setAprobando] = useState(false);
 
   const huboCambios = nombre !== centro.nombre || colorAcento !== centro.color_acento;
 
@@ -139,6 +142,12 @@ function DetalleCentro({
     setGuardando(true);
     await onActualizar(centro.id, { nombre, color_acento: colorAcento });
     setGuardando(false);
+  }
+
+  async function aprobarCentro() {
+    setAprobando(true);
+    await onAprobar(centro.id);
+    setAprobando(false);
   }
 
   return (
@@ -162,13 +171,29 @@ function DetalleCentro({
             borderRadius: 999,
             fontSize: 13,
             fontWeight: 700,
-            background: centro.plan_activo ? "#DFF3E6" : "#F6DADA",
-            color: centro.plan_activo ? "#1E7A46" : "#8A1418"
+            background: !centro.aprobado ? "#FCEBD5" : centro.plan_activo ? "#DFF3E6" : "#F6DADA",
+            color: !centro.aprobado ? "#8A5A00" : centro.plan_activo ? "#1E7A46" : "#8A1418"
           }}
         >
-          {centro.plan_activo ? "Activo" : "Dado de baja"}
+          {!centro.aprobado ? "Pendiente de aprobación" : centro.plan_activo ? "Activo" : "Dado de baja"}
         </span>
       </div>
+
+      {!centro.aprobado && (
+        <section style={{ background: "#FCEBD5", border: "1px solid #E8C88A", borderRadius: 20, padding: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <p style={{ margin: 0, fontSize: 14, color: "#5C4300", lineHeight: 1.6 }}>
+            Este centro se registró solo y todavía no puede operar. Revisá el nombre y, si te parece legítimo,
+            aprobalo para que el dueño pueda entrar a su panel.
+          </p>
+          <button
+            onClick={aprobarCentro}
+            disabled={aprobando}
+            style={{ flex: "none", height: 48, padding: "0 22px", borderRadius: 14, border: 0, background: "#2E9E5B", color: "#FFFFFF", fontWeight: 700, fontSize: 15 }}
+          >
+            {aprobando ? "Aprobando…" : "Aprobar centro"}
+          </button>
+        </section>
+      )}
 
       <section style={{ background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
         <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted }}>DATOS DEL CENTRO</div>

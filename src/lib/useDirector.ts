@@ -98,5 +98,9 @@ export function useCentrosDirector() {
     await actualizar(id, { plan_activo: activo });
   }
 
-  return { centros, cargando, crear, actualizar, alternarPlan };
+  async function aprobar(id: string) {
+    await actualizar(id, { aprobado: true });
+  }
+
+  return { centros, cargando, crear, actualizar, alternarPlan, aprobar };
 }

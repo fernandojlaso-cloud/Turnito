@@ -12,6 +12,7 @@ export interface Centro {
   logo_url: string | null;
   color_acento: string;
   plan_activo: boolean;
+  aprobado: boolean;
   creado_en: string;
 }
 

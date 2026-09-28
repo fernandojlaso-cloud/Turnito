@@ -30,6 +30,14 @@ export default function AdminRoutes() {
     );
   }
 
+  if (!centro.aprobado) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: color.textSoft, textAlign: "center", padding: 24 }}>
+        Tu centro todavía está pendiente de aprobación. Te vamos a avisar en cuanto quede activo.
+      </div>
+    );
+  }
+
   if (!centro.plan_activo) {
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: color.textSoft, textAlign: "center", padding: 24 }}>

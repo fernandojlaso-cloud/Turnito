@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import Reservar from "./pages/Reservar";
+import Registro from "./pages/Registro";
 import AdminRoutes from "./pages/admin/AdminRoutes";
 import DirectorRoutes from "./pages/director/DirectorRoutes";
 
@@ -8,6 +9,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Navigate to="/admin" replace />} />
       <Route path="/r/:slug" element={<Reservar />} />
+      <Route path="/registro" element={<Registro />} />
       <Route path="/admin/*" element={<AdminRoutes />} />
       <Route path="/director" element={<DirectorRoutes />} />
     </Routes>

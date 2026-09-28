@@ -79,6 +79,7 @@ export default function Reservar() {
 
   if (loading) return <Centered>Cargando…</Centered>;
   if (error || !centro) return <Centered>{error ?? "Centro no encontrado."}</Centered>;
+  if (!centro.aprobado) return <Centered>Este centro todavía no está disponible.</Centered>;
   if (!centro.plan_activo) return <Centered>Este centro no está disponible en este momento.</Centered>;
 
   const puedeAvanzarPaso2 = !!slotElegido && slotElegido.disponible;
