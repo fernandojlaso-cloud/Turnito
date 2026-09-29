@@ -3,7 +3,8 @@ import { supabase } from "@/lib/supabase";
 import type { Actividad, Centro, Disponibilidad } from "@/lib/database.types";
 import AdminLayout from "./AdminLayout";
 import { tokens } from "@/styles/tokens";
-import { Field, PrimaryButton } from "@/components/UI";
+import { Field, LogoPicker, PrimaryButton } from "@/components/UI";
+import { subirImagen } from "@/lib/logo";
 
 const { color, font } = tokens;
 const dias = ["D", "L", "M", "X", "J", "V", "S"]; // índice = getDay()
@@ -191,6 +192,8 @@ export default function Actividades({ centro }: { centro: Centro }) {
               </div>
               <h2 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>{actual.nombre}</h2>
             </div>
+
+            <FotoYDireccion key={actual.id} centroId={centro.id} actividad={actual} onPatch={patch} />
 
             <Row label="TIPO DE TURNO">
               <Segmented
@@ -435,5 +438,43 @@ function NuevaActividadForm({
         </div>
       </form>
     </section>
+  );
+}
+
+function FotoYDireccion({
+  centroId,
+  actividad,
+  onPatch
+}: {
+  centroId: string;
+  actividad: Actividad;
+  onPatch: (id: string, cambios: Partial<Actividad>) => Promise<void>;
+}) {
+  const [preview, setPreview] = useState<string | null>(actividad.imagen_url);
+  const [subiendo, setSubiendo] = useState(false);
+  const [direccion, setDireccion] = useState(actividad.direccion ?? "");
+
+  async function elegirFoto(file: File) {
+    setPreview(URL.createObjectURL(file));
+    setSubiendo(true);
+    const url = await subirImagen(`${centroId}/act-${actividad.id}`, file);
+    setSubiendo(false);
+    if (url) await onPatch(actividad.id, { imagen_url: url });
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+      <LogoPicker label={subiendo ? "Subiendo…" : "Foto de la actividad"} preview={preview} onFile={elegirFoto} />
+      <Field
+        id="direccion-actividad"
+        label="Dirección (dónde se realiza)"
+        value={direccion}
+        onChange={(e) => setDireccion(e.target.value)}
+        onBlur={() => {
+          if (direccion !== (actividad.direccion ?? "")) onPatch(actividad.id, { direccion: direccion.trim() || null });
+        }}
+        placeholder="Ej. Av. Cabildo 2450, Sala 2"
+      />
+    </div>
   );
 }

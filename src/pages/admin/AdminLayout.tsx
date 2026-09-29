@@ -9,6 +9,7 @@ const { color, font } = tokens;
 const links = [
   { to: "/admin", label: "Agenda", end: true },
   { to: "/admin/actividades", label: "Actividades" },
+  { to: "/admin/profesionales", label: "Profesionales" },
   { to: "/admin/clientes", label: "Clientes" },
   { to: "/admin/estadisticas", label: "Estadísticas" }
 ];

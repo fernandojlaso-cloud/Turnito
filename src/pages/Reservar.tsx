@@ -37,6 +37,12 @@ export default function Reservar() {
   const actividad = actividades?.find((a) => a.id === actividadId) ?? null;
   const dia = dias[diaIdx];
 
+  // Fondo de la página: la foto de la actividad elegida (o, en el paso 1
+  // antes de elegir nada, la primera foto que tenga cargada alguna
+  // actividad del centro) — siempre en blanco y negro para que el
+  // amarillo de marca resalte por encima.
+  const fondoUrl = actividad?.imagen_url ?? actividades?.find((a) => a.imagen_url)?.imagen_url ?? null;
+
   // Al cambiar de actividad o de día, traemos los turnos existentes de ese
   // día para saber qué horarios ya están ocupados / sin cupo.
   useEffect(() => {
@@ -88,196 +94,230 @@ export default function Reservar() {
   const puedeConfirmar = nombre.trim().length > 1 && /\S+@\S+\.\S+/.test(email) && telefono.trim().length > 5 && dni.trim().length > 5;
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: color.bg,
-        display: "flex",
-        flexDirection: "column",
-        fontFamily: font.body
-      }}
-    >
-      <Header centro={centro} accent={accent} />
+    <div style={{ minHeight: "100vh", position: "relative", fontFamily: font.body }}>
+      <FondoActividad url={fondoUrl} />
 
-      {step < 4 && (
-        <div style={{ padding: "16px 20px 0", maxWidth: 480, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
-          <ProgressBar step={step} of={3} />
-          <div style={{ marginTop: 10, fontFamily: font.mono, fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", color: color.textMuted }}>
-            PASO {step} DE 3
+      <div style={{ position: "relative", zIndex: 1, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+        <Header centro={centro} accent={accent} />
+
+        {step < 4 && (
+          <div style={{ padding: "16px 20px 0", maxWidth: 480, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+            <ProgressBar step={step} of={3} />
+            <div style={{ marginTop: 10, fontFamily: font.mono, fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", color: fondoUrl ? "#FFFFFF" : color.textMuted }}>
+              PASO {step} DE 3
+            </div>
           </div>
-        </div>
-      )}
-
-      <main style={{ flex: 1, padding: 20, maxWidth: 480, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
-        {step === 1 && (
-          <>
-            <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>Elegí la actividad</h1>
-            <p style={{ margin: "6px 0 20px", fontSize: 14, color: color.textSoft }}>Reservá tu turno en menos de un minuto.</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {actividades?.map((a) => (
-                <SelectCard
-                  key={a.id}
-                  selected={a.id === actividadId}
-                  onClick={() => setActividadId(a.id)}
-                  accent={accent}
-                  code={a.codigo}
-                  title={a.nombre}
-                  subtitle={`${a.tipo === "grupal" ? "Grupal" : "Individual"} · ${a.duracion_min} min`}
-                />
-              ))}
-              {!actividades?.length && <p style={{ color: color.textMuted }}>Este centro todavía no activó actividades.</p>}
-            </div>
-          </>
         )}
 
-        {step === 2 && actividad && (
-          <>
-            <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>Día y horario</h1>
-            <p style={{ margin: "6px 0 20px", fontSize: 14, color: color.textSoft }}>{actividad.nombre}</p>
+        <main style={{ flex: 1, padding: 20, maxWidth: 480, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
+          <div style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(6px)", borderRadius: 24, padding: 20, boxShadow: fondoUrl ? "0 8px 30px rgba(0,0,0,0.25)" : "none" }}>
+            {step === 1 && (
+              <>
+                <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>Elegí la actividad</h1>
+                <p style={{ margin: "6px 0 20px", fontSize: 14, color: color.textSoft }}>Reservá tu turno en menos de un minuto.</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {actividades?.map((a) => (
+                    <SelectCard
+                      key={a.id}
+                      selected={a.id === actividadId}
+                      onClick={() => setActividadId(a.id)}
+                      accent={accent}
+                      code={a.codigo}
+                      title={a.nombre}
+                      subtitle={`${a.tipo === "grupal" ? "Grupal" : "Individual"} · ${a.duracion_min} min`}
+                    />
+                  ))}
+                  {!actividades?.length && <p style={{ color: color.textMuted }}>Este centro todavía no activó actividades.</p>}
+                </div>
+              </>
+            )}
 
-            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
-              {dias.map((d, i) => {
-                const selected = i === diaIdx;
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setDiaIdx(i)}
-                    aria-pressed={selected}
-                    style={{
-                      flex: "none",
-                      width: 64,
-                      height: 72,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 4,
-                      borderRadius: 14,
-                      background: selected ? accent : color.surface,
-                      border: `1px solid ${selected ? color.ink : color.border}`
-                    }}
-                  >
-                    <span style={{ fontSize: 11, fontWeight: 700 }}>
-                      {d.toLocaleDateString("es-AR", { weekday: "short" }).toUpperCase()}
-                    </span>
-                    <span style={{ fontFamily: font.mono, fontSize: 18, fontWeight: 600 }}>{d.getDate()}</span>
-                  </button>
-                );
-              })}
-            </div>
+            {step === 2 && actividad && (
+              <>
+                <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>Día y horario</h1>
+                <p style={{ margin: "6px 0 4px", fontSize: 14, color: color.textSoft }}>{actividad.nombre}</p>
+                {actividad.direccion && (
+                  <p style={{ margin: "0 0 20px", fontSize: 13, color: color.textMuted, display: "flex", alignItems: "center", gap: 6 }}>
+                    📍 {actividad.direccion}
+                  </p>
+                )}
+                {!actividad.direccion && <div style={{ marginBottom: 20 }} />}
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginTop: 20 }}>
-              {slots.map((s, i) => (
-                <SlotButton
-                  key={i}
-                  time={formatearHora(s.inicio)}
-                  sub={
-                    actividad.tipo === "grupal"
-                      ? s.disponible
-                        ? `${s.cuposLibres} ${s.cuposLibres === 1 ? "cupo" : "cupos"}`
-                        : "Completo"
-                      : s.disponible
-                      ? "Disponible"
-                      : "Ocupado"
-                  }
-                  disabled={!s.disponible}
-                  selected={slotIdx === i}
-                  accent={accent}
-                  onClick={() => setSlotIdx(i)}
-                />
-              ))}
-              {!slots.length && <p style={{ color: color.textMuted }}>Sin horarios disponibles ese día.</p>}
-            </div>
+                <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+                  {dias.map((d, i) => {
+                    const selected = i === diaIdx;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => setDiaIdx(i)}
+                        aria-pressed={selected}
+                        style={{
+                          flex: "none",
+                          width: 64,
+                          height: 72,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 4,
+                          borderRadius: 14,
+                          background: selected ? accent : color.surface,
+                          border: `1px solid ${selected ? color.ink : color.border}`
+                        }}
+                      >
+                        <span style={{ fontSize: 11, fontWeight: 700 }}>
+                          {d.toLocaleDateString("es-AR", { weekday: "short" }).toUpperCase()}
+                        </span>
+                        <span style={{ fontFamily: font.mono, fontSize: 18, fontWeight: 600 }}>{d.getDate()}</span>
+                      </button>
+                    );
+                  })}
+                </div>
 
-            <p style={{ marginTop: 16, fontSize: 14, color: color.textSoft, lineHeight: 1.5 }}>
-              {actividad.tipo === "grupal"
-                ? `Clase grupal · máximo ${actividad.cupo} personas por turno.`
-                : `Turno individual · ${actividad.duracion_min} min.`}
-            </p>
-          </>
-        )}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 10, marginTop: 20 }}>
+                  {slots.map((s, i) => (
+                    <SlotButton
+                      key={i}
+                      time={formatearHora(s.inicio)}
+                      sub={
+                        actividad.tipo === "grupal"
+                          ? s.disponible
+                            ? `${s.cuposLibres} ${s.cuposLibres === 1 ? "cupo" : "cupos"}`
+                            : "Completo"
+                          : s.disponible
+                          ? "Disponible"
+                          : "Ocupado"
+                      }
+                      disabled={!s.disponible}
+                      selected={slotIdx === i}
+                      accent={accent}
+                      onClick={() => setSlotIdx(i)}
+                    />
+                  ))}
+                  {!slots.length && <p style={{ color: color.textMuted }}>Sin horarios disponibles ese día.</p>}
+                </div>
 
-        {step === 3 && actividad && slotElegido && (
-          <>
-            <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>Tus datos</h1>
-            <p style={{ margin: "6px 0 20px", fontSize: 14, color: color.textSoft }}>No necesitás crear una cuenta.</p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <Field id="nombre" label="Nombre y apellido" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Camila Sosa" />
-              <Field id="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@correo.com" />
-              <Field id="telefono" label="Teléfono (WhatsApp)" type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej. 11 2345 6789" />
-              <Field id="dni" label="DNI" value={dni} onChange={(e) => setDni(e.target.value)} placeholder="Ej. 30123456" />
-            </div>
-            <div style={{ marginTop: 20, background: color.ink, color: "#FFFFFF", borderRadius: 16, padding: "18px 20px" }}>
-              <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: "#9AA0A6" }}>TU TURNO</div>
-              <div style={{ fontFamily: font.display, fontWeight: 600, fontSize: 19 }}>{actividad.nombre}</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: accent }}>{formatearDiaLargo(dia)}</div>
-              <div style={{ fontFamily: font.mono, fontSize: 14 }}>{formatearHora(slotElegido.inicio)} · {actividad.duracion_min} min</div>
-              <div style={{ marginTop: 4, fontSize: 13, color: "#D9DBDC" }}>
-                Cancelación gratuita hasta {actividad.cancelacion_horas} h antes.
-              </div>
-            </div>
-            {errorReserva && <p style={{ color: "#8A1418", marginTop: 12 }}>{errorReserva}</p>}
-          </>
-        )}
+                <p style={{ marginTop: 16, fontSize: 14, color: color.textSoft, lineHeight: 1.5 }}>
+                  {actividad.tipo === "grupal"
+                    ? `Clase grupal · máximo ${actividad.cupo} personas por turno.`
+                    : `Turno individual · ${actividad.duracion_min} min.`}
+                </p>
+              </>
+            )}
 
-        {step === 4 && actividad && slotElegido && (
-          <Confirmacion
-            centroTelefonoWhatsapp={centro.telefono_whatsapp}
-            accent={accent}
-            actividadNombre={actividad.nombre}
-            diaLargo={formatearDiaLargo(dia)}
-            hora={`${formatearHora(slotElegido.inicio)} · ${actividad.duracion_min} min`}
-            politica={`Gratis hasta ${actividad.cancelacion_horas} h antes`}
-            turnoId={turnoIdCreado}
-          />
-        )}
-      </main>
+            {step === 3 && actividad && slotElegido && (
+              <>
+                <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>Tus datos</h1>
+                <p style={{ margin: "6px 0 20px", fontSize: 14, color: color.textSoft }}>No necesitás crear una cuenta.</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <Field id="nombre" label="Nombre y apellido" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Camila Sosa" />
+                  <Field id="email" label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@correo.com" />
+                  <Field id="telefono" label="Teléfono (WhatsApp)" type="tel" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej. 11 2345 6789" />
+                  <Field id="dni" label="DNI" value={dni} onChange={(e) => setDni(e.target.value)} placeholder="Ej. 30123456" />
+                </div>
+                <div style={{ marginTop: 20, background: color.ink, color: "#FFFFFF", borderRadius: 16, padding: "18px 20px" }}>
+                  <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: "#9AA0A6" }}>TU TURNO</div>
+                  <div style={{ fontFamily: font.display, fontWeight: 600, fontSize: 19 }}>{actividad.nombre}</div>
+                  <div style={{ fontSize: 15, fontWeight: 600, color: accent }}>{formatearDiaLargo(dia)}</div>
+                  <div style={{ fontFamily: font.mono, fontSize: 14 }}>{formatearHora(slotElegido.inicio)} · {actividad.duracion_min} min</div>
+                  {actividad.direccion && <div style={{ marginTop: 6, fontSize: 13, color: "#D9DBDC" }}>📍 {actividad.direccion}</div>}
+                  <div style={{ marginTop: 4, fontSize: 13, color: "#D9DBDC" }}>
+                    Cancelación gratuita hasta {actividad.cancelacion_horas} h antes.
+                  </div>
+                </div>
+                {errorReserva && <p style={{ color: "#8A1418", marginTop: 12 }}>{errorReserva}</p>}
+              </>
+            )}
 
-      {step < 4 && (
-        <div
-          style={{
-            boxSizing: "border-box",
-            padding: "14px 20px calc(14px + env(safe-area-inset-bottom, 0px))",
-            background: color.surface,
-            borderTop: `1px solid ${color.border}`,
-            display: "flex",
-            gap: 12,
-            maxWidth: 480,
-            margin: "0 auto",
-            width: "100%"
-          }}
-        >
-          {step > 1 && (
-            <button
-              onClick={() => setStep(step - 1)}
-              aria-label="Volver al paso anterior"
-              style={{
-                width: 56,
-                height: 56,
-                flex: "none",
-                borderRadius: 14,
-                border: `1px solid ${color.borderStrong}`,
-                background: color.surface
-              }}
-            >
-              ←
-            </button>
-          )}
-          <PrimaryButton
-            accent={accent}
-            disabled={
-              (step === 1 && !actividadId) ||
-              (step === 2 && !puedeAvanzarPaso2) ||
-              (step === 3 && (!puedeConfirmar || reservando))
-            }
-            onClick={() => {
-              if (step === 3) confirmar();
-              else setStep(step + 1);
+            {step === 4 && actividad && slotElegido && (
+              <Confirmacion
+                centroTelefonoWhatsapp={centro.telefono_whatsapp}
+                accent={accent}
+                actividadNombre={actividad.nombre}
+                direccion={actividad.direccion}
+                diaLargo={formatearDiaLargo(dia)}
+                hora={`${formatearHora(slotElegido.inicio)} · ${actividad.duracion_min} min`}
+                politica={`Gratis hasta ${actividad.cancelacion_horas} h antes`}
+                turnoId={turnoIdCreado}
+              />
+            )}
+          </div>
+        </main>
+
+        {step < 4 && (
+          <div
+            style={{
+              boxSizing: "border-box",
+              padding: "14px 20px calc(14px + env(safe-area-inset-bottom, 0px))",
+              background: color.surface,
+              borderTop: `1px solid ${color.border}`,
+              display: "flex",
+              gap: 12,
+              maxWidth: 480,
+              margin: "0 auto",
+              width: "100%"
             }}
           >
-            {step === 3 ? (reservando ? "Confirmando…" : "Confirmar turno") : "Continuar"}
-          </PrimaryButton>
-        </div>
+            {step > 1 && (
+              <button
+                onClick={() => setStep(step - 1)}
+                aria-label="Volver al paso anterior"
+                style={{
+                  width: 56,
+                  height: 56,
+                  flex: "none",
+                  borderRadius: 14,
+                  border: `1px solid ${color.borderStrong}`,
+                  background: color.surface
+                }}
+              >
+                ←
+              </button>
+            )}
+            <PrimaryButton
+              accent={accent}
+              disabled={
+                (step === 1 && !actividadId) ||
+                (step === 2 && !puedeAvanzarPaso2) ||
+                (step === 3 && (!puedeConfirmar || reservando))
+              }
+              onClick={() => {
+                if (step === 3) confirmar();
+                else setStep(step + 1);
+              }}
+            >
+              {step === 3 ? (reservando ? "Confirmando…" : "Confirmar turno") : "Continuar"}
+            </PrimaryButton>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Fondo de foto en blanco y negro, con velo oscuro para que el
+ *  contenido siga siendo legible encima. Sin foto, queda un degradé
+ *  neutro en vez de romper el diseño. */
+function FondoActividad({ url }: { url: string | null }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 0, overflow: "hidden" }}>
+      {url ? (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundImage: `url(${url})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              filter: "grayscale(1) contrast(1.05)",
+              transform: "scale(1.02)"
+            }}
+          />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(13,13,15,0.55), rgba(13,13,15,0.75))" }} />
+        </>
+      ) : (
+        <div style={{ position: "absolute", inset: 0, background: `linear-gradient(160deg, ${color.ink}, #2A2B2F)` }} />
       )}
     </div>
   );
@@ -291,7 +331,8 @@ function Header({ centro, accent }: { centro: { nombre: string; logo_url: string
         flex: "none",
         boxSizing: "border-box",
         padding: "0 20px",
-        background: color.surface,
+        background: "rgba(255,255,255,0.96)",
+        backdropFilter: "blur(6px)",
         borderBottom: `1px solid ${color.border}`,
         display: "flex",
         alignItems: "center",
@@ -316,6 +357,7 @@ function Confirmacion({
   centroTelefonoWhatsapp,
   accent,
   actividadNombre,
+  direccion,
   diaLargo,
   hora,
   politica,
@@ -324,6 +366,7 @@ function Confirmacion({
   centroTelefonoWhatsapp: string | null;
   accent: string;
   actividadNombre: string;
+  direccion: string | null;
   diaLargo: string;
   hora: string;
   politica: string;
@@ -357,6 +400,7 @@ function Confirmacion({
 
       <div style={{ background: color.surface, border: `1px solid ${color.border}`, borderRadius: 16, padding: "4px 20px" }}>
         <Row label="ACTIVIDAD" value={actividadNombre} />
+        {direccion && <Row label="DIRECCIÓN" value={direccion} />}
         <Row label="DÍA" value={diaLargo} />
         <Row label="HORARIO" value={hora} mono />
         <Row label="CANCELACIÓN" value={politica} last />

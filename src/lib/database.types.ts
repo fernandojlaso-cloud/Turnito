@@ -36,6 +36,8 @@ export interface Actividad {
   cancelacion_horas: number;
   activa: boolean;
   orden: number;
+  direccion: string | null;
+  imagen_url: string | null;
 }
 
 export interface Disponibilidad {

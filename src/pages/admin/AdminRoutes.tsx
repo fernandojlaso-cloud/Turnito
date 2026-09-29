@@ -7,6 +7,7 @@ import Agenda from "./Agenda";
 import Actividades from "./Actividades";
 import Clientes from "./Clientes";
 import Estadisticas from "./Estadisticas";
+import Profesionales from "./Profesionales";
 
 const { color } = tokens;
 
@@ -41,6 +42,7 @@ export default function AdminRoutes() {
       <Route path="actividades" element={<Actividades centro={centro} />} />
       <Route path="clientes" element={<Clientes centro={centro} />} />
       <Route path="estadisticas" element={<Estadisticas centro={centro} />} />
+      <Route path="profesionales" element={<Profesionales centro={centro} />} />
     </Routes>
   );
 }
