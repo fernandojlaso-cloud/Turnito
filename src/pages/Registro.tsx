@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { subirLogo } from "@/lib/logo";
 import { tokens } from "@/styles/tokens";
-import { Field, LogoPicker, PrimaryButton } from "@/components/UI";
+import { Field, FondoApp, LogoPicker, PrimaryButton } from "@/components/UI";
 
 const { color, font } = tokens;
 
@@ -128,50 +128,56 @@ export default function Registro() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: color.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <form
-        onSubmit={handleSubmit}
-        style={{ width: 420, background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 32, display: "flex", flexDirection: "column", gap: 20 }}
-      >
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <div style={{ width: 10, height: 10, borderRadius: "50%", background: color.accentDefault }} />
-            <span style={{ fontFamily: font.display, fontWeight: 700, fontSize: 16 }}>turnito</span>
+    <div style={{ minHeight: "100vh", position: "relative" }}>
+      <FondoApp />
+      <div style={{ position: "relative", zIndex: 1, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <form
+          onSubmit={handleSubmit}
+          style={{ width: 420, background: "rgba(255,255,255,0.97)", backdropFilter: "blur(6px)", borderRadius: 20, padding: 32, display: "flex", flexDirection: "column", gap: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}
+        >
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <div style={{ width: 10, height: 10, borderRadius: "50%", background: color.accentDefault }} />
+              <span style={{ fontFamily: font.display, fontWeight: 700, fontSize: 16 }}>turnito</span>
+            </div>
+            <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>Sumá tu centro</h1>
+            <p style={{ marginTop: 8, fontSize: 14, color: color.textSoft }}>
+              Creá tu cuenta para empezar a usar Turnito. Tu centro queda pendiente de aprobación.
+            </p>
           </div>
-          <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>Sumá tu centro</h1>
-          <p style={{ marginTop: 8, fontSize: 14, color: color.textSoft }}>
-            Creá tu cuenta para empezar a usar Turnito. Tu centro queda pendiente de aprobación.
+          <LogoPicker label="Logo de tu centro (opcional)" preview={logoPreview} onFile={elegirLogo} />
+          <Field id="reg-centro" label="Nombre del centro" value={nombreCentro} onChange={(e) => setNombreCentro(e.target.value)} placeholder="Ej. Studio Fit Palermo" />
+          <Field
+            id="reg-whatsapp"
+            label="WhatsApp del centro"
+            type="tel"
+            value={telefonoWhatsapp}
+            onChange={(e) => setTelefonoWhatsapp(e.target.value)}
+            placeholder="Ej. 11 2345 6789"
+          />
+          <p style={{ margin: "-12px 0 0", fontSize: 12, color: color.textMuted }}>
+            A este número te van a escribir tus clientes para avisarte sobre sus turnos.
           </p>
-        </div>
-        <LogoPicker label="Logo de tu centro (opcional)" preview={logoPreview} onFile={elegirLogo} />
-        <Field id="reg-centro" label="Nombre del centro" value={nombreCentro} onChange={(e) => setNombreCentro(e.target.value)} placeholder="Ej. Studio Fit Palermo" />
-        <Field
-          id="reg-whatsapp"
-          label="WhatsApp del centro"
-          type="tel"
-          value={telefonoWhatsapp}
-          onChange={(e) => setTelefonoWhatsapp(e.target.value)}
-          placeholder="Ej. 11 2345 6789"
-        />
-        <p style={{ margin: "-12px 0 0", fontSize: 12, color: color.textMuted }}>
-          A este número te van a escribir tus clientes para avisarte sobre sus turnos.
-        </p>
-        <Field id="reg-email" label="Tu email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@correo.com" />
-        <Field id="reg-password" label="Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
-        {error && <p style={{ color: "#8A1418", fontSize: 14, margin: 0 }}>{error}</p>}
-        <PrimaryButton accent={color.accentDefault} disabled={!valido || enviando} type="submit">
-          {enviando ? "Creando…" : "Crear mi cuenta"}
-        </PrimaryButton>
-      </form>
+          <Field id="reg-email" label="Tu email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="nombre@correo.com" />
+          <Field id="reg-password" label="Contraseña" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+          {error && <p style={{ color: "#8A1418", fontSize: 14, margin: 0 }}>{error}</p>}
+          <PrimaryButton accent={color.accentDefault} disabled={!valido || enviando} type="submit">
+            {enviando ? "Creando…" : "Crear mi cuenta"}
+          </PrimaryButton>
+        </form>
+      </div>
     </div>
   );
 }
 
 function Centrado({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ minHeight: "100vh", background: color.bg, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ width: 420, background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 32, textAlign: "center" }}>
-        {children}
+    <div style={{ minHeight: "100vh", position: "relative" }}>
+      <FondoApp />
+      <div style={{ position: "relative", zIndex: 1, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <div style={{ width: 420, background: "rgba(255,255,255,0.97)", backdropFilter: "blur(6px)", borderRadius: 20, padding: 32, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}>
+          {children}
+        </div>
       </div>
     </div>
   );

@@ -249,3 +249,25 @@ export function LogoPicker({
     </div>
   );
 }
+
+/** Fondo fijo de toda la app (login, registro, reserva pública): la
+ *  misma foto en blanco y negro con velo oscuro, siempre igual — no
+ *  depende de lo que cargue cada centro. */
+export function FondoApp() {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 0, overflow: "hidden" }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: "url(/img/fondo-app.jpg)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          filter: "grayscale(1) contrast(1.05)",
+          transform: "scale(1.02)"
+        }}
+      />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(13,13,15,0.55), rgba(13,13,15,0.75))" }} />
+    </div>
+  );
+}

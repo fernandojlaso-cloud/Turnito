@@ -5,7 +5,7 @@ import { useReservar } from "@/lib/useReservar";
 import { calcularSlots, formatearDiaLargo, formatearHora, linkWhatsapp } from "@/lib/slots";
 import { supabase } from "@/lib/supabase";
 import type { Turno } from "@/lib/database.types";
-import { SelectCard, SlotButton, PrimaryButton, ProgressBar, Field } from "@/components/UI";
+import { FondoApp, SelectCard, SlotButton, PrimaryButton, ProgressBar, Field } from "@/components/UI";
 import { tokens } from "@/styles/tokens";
 
 const { color, font } = tokens;
@@ -36,12 +36,6 @@ export default function Reservar() {
   const accent = centro?.color_acento ?? color.accentDefault;
   const actividad = actividades?.find((a) => a.id === actividadId) ?? null;
   const dia = dias[diaIdx];
-
-  // Fondo de la página: la foto de la actividad elegida (o, en el paso 1
-  // antes de elegir nada, la primera foto que tenga cargada alguna
-  // actividad del centro) — siempre en blanco y negro para que el
-  // amarillo de marca resalte por encima.
-  const fondoUrl = actividad?.imagen_url ?? actividades?.find((a) => a.imagen_url)?.imagen_url ?? null;
 
   // Al cambiar de actividad o de día, traemos los turnos existentes de ese
   // día para saber qué horarios ya están ocupados / sin cupo.
@@ -95,7 +89,7 @@ export default function Reservar() {
 
   return (
     <div style={{ minHeight: "100vh", position: "relative", fontFamily: font.body }}>
-      <FondoActividad url={fondoUrl} />
+      <FondoApp />
 
       <div style={{ position: "relative", zIndex: 1, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
         <Header centro={centro} accent={accent} />
@@ -103,14 +97,14 @@ export default function Reservar() {
         {step < 4 && (
           <div style={{ padding: "16px 20px 0", maxWidth: 480, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
             <ProgressBar step={step} of={3} />
-            <div style={{ marginTop: 10, fontFamily: font.mono, fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", color: fondoUrl ? "#FFFFFF" : color.textMuted }}>
+            <div style={{ marginTop: 10, fontFamily: font.mono, fontSize: 12, fontWeight: 600, letterSpacing: "0.1em", color: "#FFFFFF" }}>
               PASO {step} DE 3
             </div>
           </div>
         )}
 
         <main style={{ flex: 1, padding: 20, maxWidth: 480, margin: "0 auto", width: "100%", boxSizing: "border-box" }}>
-          <div style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(6px)", borderRadius: 24, padding: 20, boxShadow: fondoUrl ? "0 8px 30px rgba(0,0,0,0.25)" : "none" }}>
+          <div style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "blur(6px)", borderRadius: 24, padding: 20, boxShadow: "0 8px 30px rgba(0,0,0,0.25)" }}>
             {step === 1 && (
               <>
                 <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>Elegí la actividad</h1>
@@ -291,34 +285,6 @@ export default function Reservar() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-/** Fondo de foto en blanco y negro, con velo oscuro para que el
- *  contenido siga siendo legible encima. Sin foto, queda un degradé
- *  neutro en vez de romper el diseño. */
-function FondoActividad({ url }: { url: string | null }) {
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 0, overflow: "hidden" }}>
-      {url ? (
-        <>
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              backgroundImage: `url(${url})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              filter: "grayscale(1) contrast(1.05)",
-              transform: "scale(1.02)"
-            }}
-          />
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(13,13,15,0.55), rgba(13,13,15,0.75))" }} />
-        </>
-      ) : (
-        <div style={{ position: "absolute", inset: 0, background: `linear-gradient(160deg, ${color.ink}, #2A2B2F)` }} />
-      )}
     </div>
   );
 }
