@@ -9,7 +9,7 @@ import { cerrarSesion } from "@/components/Bloqueo";
 const { color, font } = tokens;
 
 export default function Centros() {
-  const { centros, cargando, crear, actualizar, alternarPlan, aprobar } = useCentrosDirector();
+  const { centros, cargando, error, crear, actualizar, alternarPlan, aprobar } = useCentrosDirector();
   const [nombreNuevo, setNombreNuevo] = useState("");
   const [creando, setCreando] = useState(false);
   const [selId, setSelId] = useState<string | null>(null);
@@ -68,6 +68,7 @@ export default function Centros() {
           >
             {creando ? "Creando…" : "+ Agregar centro"}
           </button>
+          {error && <p style={{ color: "#E8817D", fontSize: 13, margin: 0 }}>{error}</p>}
         </form>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>

@@ -48,6 +48,7 @@ export function useSesionDirector() {
 export function useCentrosDirector() {
   const [centros, setCentros] = useState<Centro[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   async function recargar() {
     setCargando(true);
@@ -70,6 +71,7 @@ export function useCentrosDirector() {
   }
 
   async function crear(nombre: string): Promise<string | null> {
+    setError(null);
     const slugBase = slugify(nombre);
     let slug = slugBase;
     let intento = 1;
@@ -80,12 +82,19 @@ export function useCentrosDirector() {
       intento += 1;
       slug = `${slugBase}-${intento}`;
     }
-    const { data, error } = await supabase
+    const { data, error: e } = await supabase
       .from("centros")
       .insert({ nombre, slug, color_acento: "#FFD400", plan_activo: true })
       .select()
       .single();
-    if (error || !data) return null;
+    if (e || !data) {
+      setError(
+        e?.message.includes("duplicate")
+          ? "Ya existe un centro con ese nombre."
+          : `No se pudo crear el centro (${e?.message ?? "sin datos"}).`
+      );
+      return null;
+    }
     await recargar();
     return (data as Centro).id;
   }
@@ -103,5 +112,5 @@ export function useCentrosDirector() {
     await actualizar(id, { aprobado: true });
   }
 
-  return { centros, cargando, crear, actualizar, alternarPlan, aprobar };
+  return { centros, cargando, error, crear, actualizar, alternarPlan, aprobar };
 }
