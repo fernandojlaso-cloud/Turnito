@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { formatearHora, linkWhatsapp } from "@/lib/slots";
+import { calcularSlots, formatearHora, linkWhatsapp } from "@/lib/slots";
 import type { Actividad, Centro, Cliente, Disponibilidad, EstadoTurno, Turno } from "@/lib/database.types";
 import AdminLayout from "./AdminLayout";
 import { tokens } from "@/styles/tokens";
@@ -47,6 +47,8 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [cargando, setCargando] = useState(true);
   const [filtroActividad, setFiltroActividad] = useState<string>("all");
+  const [actividadOcupacionId, setActividadOcupacionId] = useState<string | null>(null);
+  const [diaOcupacionIdx, setDiaOcupacionIdx] = useState(() => (new Date().getDay() + 6) % 7);
 
   useEffect(() => {
     async function cargar() {
@@ -60,6 +62,7 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
       setDisponibilidad((disp ?? []) as Disponibilidad[]);
       setTurnos((ts ?? []) as Turno[]);
       setClientes((cs ?? []) as Cliente[]);
+      setActividadOcupacionId((prev) => prev ?? (acts ?? [])[0]?.id ?? null);
       setCargando(false);
     }
     cargar();
@@ -67,6 +70,29 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
 
   const inicioSemana = useMemo(() => inicioDeSemana(new Date()), []);
   const finSemana = useMemo(() => new Date(inicioSemana.getTime() + 7 * 86400000), [inicioSemana]);
+
+  const diasSemana = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => new Date(inicioSemana.getTime() + i * 86400000)),
+    [inicioSemana]
+  );
+
+  const actividadOcupacion = actividades.find((a) => a.id === actividadOcupacionId) ?? null;
+  const diaOcupacion = diasSemana[diaOcupacionIdx];
+
+  const slotsOcupacion = useMemo(() => {
+    if (!actividadOcupacion) return [];
+    const disp = disponibilidad.filter((d) => d.actividad_id === actividadOcupacion.id);
+    const turnosDelDia = turnos.filter((t) => {
+      const inicio = new Date(t.inicio);
+      return (
+        t.actividad_id === actividadOcupacion.id &&
+        inicio.getFullYear() === diaOcupacion.getFullYear() &&
+        inicio.getMonth() === diaOcupacion.getMonth() &&
+        inicio.getDate() === diaOcupacion.getDate()
+      );
+    });
+    return calcularSlots(actividadOcupacion, disp, diaOcupacion, turnosDelDia);
+  }, [actividadOcupacion, disponibilidad, turnos, diaOcupacion]);
 
   const actsById = useMemo(() => new Map(actividades.map((a) => [a.id, a])), [actividades]);
   const clientesById = useMemo(() => new Map(clientes.map((c) => [c.id, c])), [clientes]);
@@ -217,6 +243,94 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
 
       <div style={{ marginTop: 32, marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted }}>
+          OCUPACIÓN POR DÍA · horas libres vs. reservadas
+        </div>
+        <select
+          value={actividadOcupacionId ?? ""}
+          onChange={(e) => setActividadOcupacionId(e.target.value)}
+          style={{ height: 36, borderRadius: 10, border: `1px solid ${color.borderStrong}`, padding: "0 10px", fontSize: 13, background: color.surface }}
+        >
+          {actividades.map((a) => (
+            <option key={a.id} value={a.id}>{a.nombre}</option>
+          ))}
+        </select>
+      </div>
+
+      <section style={{ background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 24 }}>
+        {!actividadOcupacion ? (
+          <p style={{ margin: 0, color: color.textMuted, fontSize: 14 }}>Todavía no hay actividades cargadas.</p>
+        ) : (
+          <>
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+              {diasSemana.map((d, i) => {
+                const selected = i === diaOcupacionIdx;
+                const esHoy = d.toDateString() === new Date().toDateString();
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setDiaOcupacionIdx(i)}
+                    aria-pressed={selected}
+                    style={{
+                      flex: "none",
+                      width: 64,
+                      height: 68,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 4,
+                      borderRadius: 14,
+                      background: selected ? centro.color_acento : color.bg,
+                      border: `1px solid ${selected ? color.ink : esHoy ? color.textMuted : color.border}`
+                    }}
+                  >
+                    <span style={{ fontSize: 11, fontWeight: 700 }}>{d.toLocaleDateString("es-AR", { weekday: "short" }).toUpperCase()}</span>
+                    <span style={{ fontFamily: font.mono, fontSize: 18, fontWeight: 600 }}>{d.getDate()}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10, marginTop: 20 }}>
+              {slotsOcupacion.map((s, i) => (
+                <div
+                  key={i}
+                  style={{
+                    height: 60,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 3,
+                    borderRadius: 14,
+                    background: s.disponible ? color.bg : centro.color_acento,
+                    border: `1px solid ${s.disponible ? color.border : color.ink}`
+                  }}
+                >
+                  <span style={{ fontFamily: font.mono, fontSize: 15, fontWeight: 600 }}>{formatearHora(s.inicio)}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700 }}>
+                    {actividadOcupacion.tipo === "grupal"
+                      ? s.disponible
+                        ? `${s.cuposLibres} libres`
+                        : "Completo"
+                      : s.disponible
+                      ? "Libre"
+                      : "Ocupado"}
+                  </span>
+                </div>
+              ))}
+              {!slotsOcupacion.length && (
+                <p style={{ margin: 0, color: color.textMuted, fontSize: 14, gridColumn: "1 / -1" }}>
+                  Sin horarios configurados para este día.
+                </p>
+              )}
+            </div>
+          </>
+        )}
+      </section>
+
+      <div style={{ marginTop: 32, marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted }}>
           RESERVAS TOMADAS · datos rápidos del cliente
         </div>
         <select
@@ -238,7 +352,7 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
             boxSizing: "border-box",
             padding: "0 24px",
             display: "grid",
-            gridTemplateColumns: "110px minmax(0,1fr) minmax(0,1fr) 140px 130px 120px 64px",
+            gridTemplateColumns: "110px minmax(0,1fr) minmax(0,1fr) 140px 130px 120px 84px",
             gap: 16,
             alignItems: "center",
             borderBottom: `1px solid ${color.border}`,
@@ -272,7 +386,7 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
                 boxSizing: "border-box",
                 padding: "0 24px",
                 display: "grid",
-                gridTemplateColumns: "110px minmax(0,1fr) minmax(0,1fr) 140px 130px 120px 64px",
+                gridTemplateColumns: "110px minmax(0,1fr) minmax(0,1fr) 140px 130px 120px 84px",
                 gap: 16,
                 alignItems: "center",
                 borderBottom: `1px solid ${color.border}`
@@ -290,15 +404,31 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
                   {estadoLabel[turno.estado]}
                 </span>
               </span>
-              <a
-                href={linkWhatsapp(cliente.telefono, `Hola ${cliente.nombre.split(" ")[0]}, te escribimos por tu turno de ${actividad.nombre}.`)}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`Enviar WhatsApp a ${cliente.nombre}`}
-                style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, border: `1px solid ${color.borderStrong}`, background: color.surface }}
-              >
-                WA
-              </a>
+              <span style={{ display: "flex", gap: 6 }}>
+                <a
+                  href={linkWhatsapp(cliente.telefono, `Hola ${cliente.nombre.split(" ")[0]}, te escribimos por tu turno de ${actividad.nombre}.`)}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Enviar WhatsApp a ${cliente.nombre}`}
+                  title="Avisar"
+                  style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, border: `1px solid ${color.borderStrong}`, background: color.surface, fontSize: 11, fontWeight: 700 }}
+                >
+                  WA
+                </a>
+                <a
+                  href={linkWhatsapp(
+                    cliente.telefono,
+                    `Hola ${cliente.nombre.split(" ")[0]}, necesitamos reprogramar o cancelar tu turno de ${actividad.nombre} del ${new Date(turno.inicio).toLocaleDateString("es-AR", { day: "2-digit", month: "short" })} a las ${formatearHora(new Date(turno.inicio))}. ¿Nos escribís para coordinar?`
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Reprogramar o cancelar el turno de ${cliente.nombre}`}
+                  title="Reprogramar / cancelar"
+                  style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, border: `1px solid ${color.borderStrong}`, background: "#FCEBD5", fontSize: 14 }}
+                >
+                  ↻
+                </a>
+              </span>
             </div>
           );
         })}
