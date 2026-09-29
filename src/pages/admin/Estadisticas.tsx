@@ -148,10 +148,18 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
     return turnos
       .filter((t) => t.estado !== "cancelado")
       .filter((t) => filtroActividad === "all" || t.actividad_id === filtroActividad)
+      .filter((t) => {
+        const inicio = new Date(t.inicio);
+        return (
+          inicio.getFullYear() === diaOcupacion.getFullYear() &&
+          inicio.getMonth() === diaOcupacion.getMonth() &&
+          inicio.getDate() === diaOcupacion.getDate()
+        );
+      })
       .map((t) => ({ turno: t, actividad: actsById.get(t.actividad_id), cliente: clientesById.get(t.cliente_id) }))
       .filter((r): r is { turno: Turno; actividad: Actividad; cliente: Cliente } => !!r.actividad && !!r.cliente)
       .slice(0, 100);
-  }, [turnos, actsById, clientesById, filtroActividad]);
+  }, [turnos, actsById, clientesById, filtroActividad, diaOcupacion]);
 
   return (
     <AdminLayout centro={centro}>
@@ -331,7 +339,7 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
 
       <div style={{ marginTop: 32, marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted }}>
-          RESERVAS TOMADAS · datos rápidos del cliente
+          RESERVAS TOMADAS · {diaOcupacion.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "short" })}
         </div>
         <select
           value={filtroActividad}
