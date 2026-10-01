@@ -75,6 +75,7 @@ export interface Turno {
   inicio: string;
   fin: string;
   estado: EstadoTurno;
+  checkin_en: string | null;
   creado_en: string;
 }
 
