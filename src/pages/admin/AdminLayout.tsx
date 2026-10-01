@@ -11,6 +11,7 @@ const links = [
   { to: "/admin/actividades", label: "Actividades" },
   { to: "/admin/profesionales", label: "Profesionales" },
   { to: "/admin/clientes", label: "Clientes" },
+  { to: "/admin/accesos", label: "Accesos" },
   { to: "/admin/estadisticas", label: "Estadísticas" }
 ];
 

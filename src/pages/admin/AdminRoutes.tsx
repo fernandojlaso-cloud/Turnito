@@ -3,7 +3,8 @@ import { useSesionAdmin } from "@/lib/useSesionAdmin";
 import { tokens } from "@/styles/tokens";
 import Login from "./Login";
 import Bloqueo from "@/components/Bloqueo";
-import Agenda from "./Agenda";
+import Accesos from "./Accesos";
+import Agenda from "./Agenda"; 
 import Actividades from "./Actividades";
 import Clientes from "./Clientes";
 import Estadisticas from "./Estadisticas";
@@ -38,11 +39,12 @@ export default function AdminRoutes() {
 
   return (
     <Routes>
-      <Route index element={<Agenda centro={centro} />} />
-      <Route path="actividades" element={<Actividades centro={centro} />} />
-      <Route path="clientes" element={<Clientes centro={centro} />} />
-      <Route path="estadisticas" element={<Estadisticas centro={centro} />} />
-      <Route path="profesionales" element={<Profesionales centro={centro} />} />
-    </Routes>
+  <Route index element={<Agenda centro={centro} />} />
+  <Route path="actividades" element={<Actividades centro={centro} />} />
+  <Route path="clientes" element={<Clientes centro={centro} />} />
+  <Route path="accesos" element={<Accesos centro={centro} />} />
+  <Route path="estadisticas" element={<Estadisticas centro={centro} />} />
+  <Route path="profesionales" element={<Profesionales centro={centro} />} />
+</Routes>
   );
 }
