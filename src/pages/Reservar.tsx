@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import type { Turno } from "@/lib/database.types";
 import { FondoApp, SelectCard, SlotButton, PrimaryButton, ProgressBar, Field } from "@/components/UI";
 import { tokens } from "@/styles/tokens";
+import { generarQrDataUrl } from "@/lib/qr";
 
 const { color, font } = tokens;
 
@@ -32,6 +33,7 @@ export default function Reservar() {
   const [email, setEmail] = useState("");
   const [telefono, setTelefono] = useState("");
   const [turnoIdCreado, setTurnoIdCreado] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   const accent = centro?.color_acento ?? color.accentDefault;
   const actividad = actividades?.find((a) => a.id === actividadId) ?? null;
@@ -75,6 +77,7 @@ export default function Reservar() {
     });
     if (id) {
       setTurnoIdCreado(id);
+      generarQrDataUrl(id).then(setQrDataUrl);
       setStep(4);
     }
   }
@@ -233,6 +236,7 @@ export default function Reservar() {
                 hora={`${formatearHora(slotElegido.inicio)} · ${actividad.duracion_min} min`}
                 politica={`Gratis hasta ${actividad.cancelacion_horas} h antes`}
                 turnoId={turnoIdCreado}
+                qrDataUrl={qrDataUrl}
               />
             )}
           </div>
@@ -327,7 +331,8 @@ function Confirmacion({
   diaLargo,
   hora,
   politica,
-  turnoId
+  turnoId,
+  qrDataUrl
 }: {
   centroTelefonoWhatsapp: string | null;
   accent: string;
@@ -337,6 +342,7 @@ function Confirmacion({
   hora: string;
   politica: string;
   turnoId: string | null;
+  qrDataUrl: string | null;
 }) {
   const wa = centroTelefonoWhatsapp
     ? linkWhatsapp(centroTelefonoWhatsapp, `¡Hola! Quiero avisar sobre mi turno de ${actividadNombre} (${diaLargo}, ${hora}).`)
@@ -372,7 +378,7 @@ function Confirmacion({
         <Row label="CANCELACIÓN" value={politica} last />
       </div>
 
-      {wa && (
+     {wa && (
         <a
           href={wa}
           target="_blank"
@@ -392,6 +398,14 @@ function Confirmacion({
         >
           Avisar por WhatsApp
         </a>
+      )}
+      {qrDataUrl && (
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          <img src={qrDataUrl} alt="QR de presentismo" width={160} height={160} style={{ borderRadius: 12 }} />
+          <p style={{ margin: 0, fontSize: 13, color: color.textSoft, textAlign: "center" }}>
+            Mostrá este código al llegar a tu turno
+          </p>
+        </div>
       )}
       {turnoId && <p style={{ fontSize: 12, color: color.textMuted, textAlign: "center" }}>Código de turno: {turnoId.slice(0, 8)}</p>}
     </div>
