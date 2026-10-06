@@ -99,7 +99,7 @@ export default function Clientes({ centro }: { centro: Centro }) {
               setCreando(true);
               setSelId(null);
             }}
-            style={{ height: 48, padding: "0 20px", borderRadius: 14, border: 0, background: centro.color_acento, fontWeight: 700, fontSize: 15 }}
+            style={{ minHeight: 48, padding: "12px 20px", borderRadius: 14, border: 0, background: centro.color_acento, fontWeight: 700, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}
           >
             + Nuevo cliente
           </button>
@@ -113,7 +113,7 @@ export default function Clientes({ centro }: { centro: Centro }) {
           setSelId(null);
         }}
         lista={
-          <section style={{ width: 360, flex: "none", background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+          <section style={{ width: modo === "movil" ? "100%" : 360, flex: "none", background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
             <input
               type="search"
               placeholder="Buscar por nombre, email, DNI o teléfono"
@@ -383,7 +383,7 @@ function DetalleCliente({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
           <div style={{ width: 72, height: 72, flex: "none", borderRadius: "50%", background: color.ink, color: accent, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font.mono, fontSize: 22, fontWeight: 600 }}>
             {cliente.nombre.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase()}

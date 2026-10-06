@@ -5,12 +5,14 @@ import AdminLayout from "./AdminLayout";
 import { tokens } from "@/styles/tokens";
 import { Field, PrimaryButton } from "@/components/UI";
 import MaestroDetalle from "@/components/admin/MaestroDetalle";
+import { useModoVista } from "@/lib/useModoVista";
 
 const { color, font } = tokens;
 const dias = ["D", "L", "M", "X", "J", "V", "S"]; // índice = getDay()
 const diasLargos = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
 export default function Actividades({ centro }: { centro: Centro }) {
+  const { modo } = useModoVista();
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [disponibilidad, setDisponibilidad] = useState<Disponibilidad[]>([]);
   const [selId, setSelId] = useState<string | null>(null);
@@ -99,7 +101,7 @@ export default function Actividades({ centro }: { centro: Centro }) {
             setCreando(true);
             setSelId(null);
           }}
-          style={{ height: 48, padding: "0 20px", borderRadius: 14, border: 0, background: centro.color_acento, fontWeight: 700, fontSize: 15 }}
+          style={{ minHeight: 48, padding: "12px 20px", borderRadius: 14, border: 0, background: centro.color_acento, fontWeight: 700, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}
         >
           + Nueva actividad
         </button>
@@ -112,7 +114,7 @@ export default function Actividades({ centro }: { centro: Centro }) {
           setSelId(null);
         }}
         lista={
-          <section style={{ width: 380, flex: "none", background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+          <section style={{ width: modo === "movil" ? "100%" : 380, flex: "none", background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
             {!actividades.length && (
               <p style={{ color: color.textMuted, fontSize: 14, padding: 8 }}>
                 Usá "+ Nueva actividad" para cargar la primera (ej. Kinesiología, Pilates, Personal trainer).

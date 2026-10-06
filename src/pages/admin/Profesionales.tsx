@@ -5,10 +5,12 @@ import AdminLayout from "./AdminLayout";
 import { tokens } from "@/styles/tokens";
 import { Field, PrimaryButton } from "@/components/UI";
 import MaestroDetalle from "@/components/admin/MaestroDetalle";
+import { useModoVista } from "@/lib/useModoVista";
 
 const { color, font } = tokens;
 
 export default function Profesionales({ centro }: { centro: Centro }) {
+  const { modo } = useModoVista();
   const [profesionales, setProfesionales] = useState<Profesional[]>([]);
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [vinculos, setVinculos] = useState<{ actividad_id: string; profesional_id: string }[]>([]);
@@ -86,7 +88,7 @@ export default function Profesionales({ centro }: { centro: Centro }) {
             setCreando(true);
             setSelId(null);
           }}
-          style={{ height: 48, padding: "0 20px", borderRadius: 14, border: 0, background: centro.color_acento, fontWeight: 700, fontSize: 15 }}
+          style={{ minHeight: 48, padding: "12px 20px", borderRadius: 14, border: 0, background: centro.color_acento, fontWeight: 700, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center", textAlign: "center" }}
         >
           + Nuevo profesional
         </button>
@@ -99,7 +101,7 @@ export default function Profesionales({ centro }: { centro: Centro }) {
           setSelId(null);
         }}
         lista={
-          <section style={{ width: 340, flex: "none", background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+          <section style={{ width: modo === "movil" ? "100%" : 340, flex: "none", background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
             {!cargando && !profesionales.length && (
               <p style={{ color: color.textMuted, fontSize: 14, padding: 8 }}>
                 Usá "+ Nuevo profesional" para cargar el primero.
