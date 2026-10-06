@@ -4,6 +4,7 @@ import type { Actividad, Centro, Profesional } from "@/lib/database.types";
 import AdminLayout from "./AdminLayout";
 import { tokens } from "@/styles/tokens";
 import { Field, PrimaryButton } from "@/components/UI";
+import MaestroDetalle from "@/components/admin/MaestroDetalle";
 
 const { color, font } = tokens;
 
@@ -91,73 +92,79 @@ export default function Profesionales({ centro }: { centro: Centro }) {
         </button>
       </div>
 
-      <div style={{ display: "flex", gap: 24, marginTop: 24, alignItems: "flex-start" }}>
-        <section style={{ width: 340, flex: "none", background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
-          {!cargando && !profesionales.length && (
-            <p style={{ color: color.textMuted, fontSize: 14, padding: 8 }}>
-              Usá "+ Nuevo profesional" para cargar el primero.
-            </p>
-          )}
-          {profesionales.map((p) => {
-            const selected = p.id === selId;
-            return (
-              <button
-                key={p.id}
-                onClick={() => {
-                  setSelId(p.id);
-                  setCreando(false);
-                }}
-                aria-pressed={selected}
-                style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", height: 68, boxSizing: "border-box", padding: "0 14px", borderRadius: 14, textAlign: "left", background: selected ? centro.color_acento : color.surface, border: `1px solid ${selected ? color.ink : color.border}`, opacity: p.activo ? 1 : 0.55 }}
-              >
-                <span style={{ width: 40, height: 40, flex: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font.mono, fontSize: 13, fontWeight: 600, background: selected ? color.ink : color.bg, color: selected ? centro.color_acento : color.ink }}>
-                  {p.iniciales}
-                </span>
-                <span style={{ fontWeight: 700, fontSize: 15 }}>{p.nombre}{!p.activo && " (baja)"}</span>
-              </button>
-            );
-          })}
-        </section>
+      <MaestroDetalle
+        hayDetalle={creando || !!actual}
+        onVolver={() => {
+          setCreando(false);
+          setSelId(null);
+        }}
+        lista={
+          <section style={{ width: 340, flex: "none", background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+            {!cargando && !profesionales.length && (
+              <p style={{ color: color.textMuted, fontSize: 14, padding: 8 }}>
+                Usá "+ Nuevo profesional" para cargar el primero.
+              </p>
+            )}
+            {profesionales.map((p) => {
+              const selected = p.id === selId;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    setSelId(p.id);
+                    setCreando(false);
+                  }}
+                  aria-pressed={selected}
+                  style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", height: 68, boxSizing: "border-box", padding: "0 14px", borderRadius: 14, textAlign: "left", background: selected ? centro.color_acento : color.surface, border: `1px solid ${selected ? color.ink : color.border}`, opacity: p.activo ? 1 : 0.55 }}
+                >
+                  <span style={{ width: 40, height: 40, flex: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font.mono, fontSize: 13, fontWeight: 600, background: selected ? color.ink : color.bg, color: selected ? centro.color_acento : color.ink }}>
+                    {p.iniciales}
+                  </span>
+                  <span style={{ fontWeight: 700, fontSize: 15 }}>{p.nombre}{!p.activo && " (baja)"}</span>
+                </button>
+              );
+            })}
+          </section>
+        }
+        detalle={
+          creando ? (
+            <NuevoProfesionalForm onCancelar={() => setCreando(false)} onCrear={crear} accent={centro.color_acento} />
+          ) : actual ? (
+            <section style={{ flex: 1, minWidth: 0, maxWidth: 560, background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 32, display: "flex", flexDirection: "column", gap: 24 }}>
+              <DetalleProfesional profesional={actual} accent={centro.color_acento} onActualizar={actualizar} />
 
-        {creando && <NuevoProfesionalForm onCancelar={() => setCreando(false)} onCrear={crear} accent={centro.color_acento} />}
-
-        {!creando && actual && (
-          <section style={{ flex: 1, minWidth: 0, maxWidth: 560, background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 32, display: "flex", flexDirection: "column", gap: 24 }}>
-            <DetalleProfesional profesional={actual} accent={centro.color_acento} onActualizar={actualizar} />
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted }}>ACTIVIDADES A CARGO</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {actividades.map((a) => {
-                  const asignado = vinculos.some((v) => v.profesional_id === selId && v.actividad_id === a.id);
-                  return (
-                    <button
-                      key={a.id}
-                      onClick={() => toggleActividad(a.id)}
-                      aria-pressed={asignado}
-                      style={{ height: 40, padding: "0 16px", borderRadius: 999, border: `1px solid ${asignado ? color.ink : color.borderStrong}`, background: asignado ? centro.color_acento : color.surface, fontWeight: 700, fontSize: 14 }}
-                    >
-                      {a.nombre}
-                    </button>
-                  );
-                })}
-                {!actividades.length && <p style={{ color: color.textMuted, fontSize: 14 }}>Todavía no hay actividades cargadas.</p>}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted }}>ACTIVIDADES A CARGO</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {actividades.map((a) => {
+                    const asignado = vinculos.some((v) => v.profesional_id === selId && v.actividad_id === a.id);
+                    return (
+                      <button
+                        key={a.id}
+                        onClick={() => toggleActividad(a.id)}
+                        aria-pressed={asignado}
+                        style={{ height: 40, padding: "0 16px", borderRadius: 999, border: `1px solid ${asignado ? color.ink : color.borderStrong}`, background: asignado ? centro.color_acento : color.surface, fontWeight: 700, fontSize: 14 }}
+                      >
+                        {a.nombre}
+                      </button>
+                    );
+                  })}
+                  {!actividades.length && <p style={{ color: color.textMuted, fontSize: 14 }}>Todavía no hay actividades cargadas.</p>}
+                </div>
+                {!!actividadesDeCentro.length && (
+                  <p style={{ fontSize: 13, color: color.textMuted, margin: 0 }}>
+                    Va a aparecer como responsable en: {actividadesDeCentro.map((a) => a.nombre).join(", ")}.
+                  </p>
+                )}
               </div>
-              {!!actividadesDeCentro.length && (
-                <p style={{ fontSize: 13, color: color.textMuted, margin: 0 }}>
-                  Va a aparecer como responsable en: {actividadesDeCentro.map((a) => a.nombre).join(", ")}.
-                </p>
-              )}
-            </div>
-          </section>
-        )}
-
-        {!creando && !actual && (
-          <section style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", color: color.textMuted, fontSize: 15 }}>
-            Elegí un profesional de la lista, o creá el primero.
-          </section>
-        )}
-      </div>
+            </section>
+          ) : (
+            <section style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", color: color.textMuted, fontSize: 15 }}>
+              Elegí un profesional de la lista, o creá el primero.
+            </section>
+          )
+        }
+      />
     </AdminLayout>
   );
 }
