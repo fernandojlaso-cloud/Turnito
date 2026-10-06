@@ -4,6 +4,7 @@ import { formatearHora, linkWhatsapp } from "@/lib/slots";
 import type { Actividad, Centro, Cliente, EstadoTurno, Profesional, Turno } from "@/lib/database.types";
 import AdminLayout from "./AdminLayout";
 import { tokens } from "@/styles/tokens";
+import { useModoVista } from "@/lib/useModoVista";
 
 const { color, font } = tokens;
 
@@ -15,6 +16,7 @@ interface FilaAgenda {
 }
 
 export default function Agenda({ centro }: { centro: Centro }) {
+  const { modo } = useModoVista();
   const [filas, setFilas] = useState<FilaAgenda[]>([]);
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [filtro, setFiltro] = useState<string>("all");
@@ -77,7 +79,7 @@ export default function Agenda({ centro }: { centro: Centro }) {
 
   return (
     <AdminLayout centro={centro}>
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 72 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", justifyContent: "space-between", minHeight: 72 }}>
         <div>
           <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 32 }}>Agenda</h1>
           <p style={{ margin: "6px 0 0", fontSize: 15, color: color.textSoft }}>
@@ -121,29 +123,31 @@ export default function Agenda({ centro }: { centro: Centro }) {
       </div>
 
       <section style={{ background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, overflow: "hidden" }}>
-        <div
-          style={{
-            height: 48,
-            boxSizing: "border-box",
-            padding: "0 24px",
-            display: "grid",
-            gridTemplateColumns: "80px 170px minmax(0,1fr) minmax(0,1fr) 130px 90px",
-            gap: 16,
-            alignItems: "center",
-            borderBottom: `1px solid ${color.border}`,
-            fontFamily: font.mono,
-            fontSize: 12,
-            letterSpacing: "0.08em",
-            color: color.textMuted
-          }}
-        >
-          <span>HORA</span>
-          <span>ACTIVIDAD</span>
-          <span>CLIENTE</span>
-          <span>RESPONSABLE</span>
-          <span>ESTADO</span>
-          <span>AVISO</span>
-        </div>
+        {modo === "escritorio" && (
+          <div
+            style={{
+              height: 48,
+              boxSizing: "border-box",
+              padding: "0 24px",
+              display: "grid",
+              gridTemplateColumns: "80px 170px minmax(0,1fr) minmax(0,1fr) 130px 90px",
+              gap: 16,
+              alignItems: "center",
+              borderBottom: `1px solid ${color.border}`,
+              fontFamily: font.mono,
+              fontSize: 12,
+              letterSpacing: "0.08em",
+              color: color.textMuted
+            }}
+          >
+            <span>HORA</span>
+            <span>ACTIVIDAD</span>
+            <span>CLIENTE</span>
+            <span>RESPONSABLE</span>
+            <span>ESTADO</span>
+            <span>AVISO</span>
+          </div>
+        )}
         {visibles.map((f) => (
           <FilaTurno key={f.turno.id} fila={f} accent={centro.color_acento} onEstado={cambiarEstado} />
         ))}
@@ -209,6 +213,7 @@ function FilaTurno({
   accent: string;
   onEstado: (id: string, estado: EstadoTurno) => void;
 }) {
+  const { modo } = useModoVista();
   const { turno, actividad, cliente, profesional } = fila;
   const grupal = actividad.tipo === "grupal";
   let bg = color.bg;
@@ -217,6 +222,72 @@ function FilaTurno({
   if (turno.estado === "no_asistio") {
     bg = color.ink;
     fg = "#FFFFFF";
+  }
+
+  const selectEstado = (
+    <select
+      value={turno.estado}
+      onChange={(e) => onEstado(turno.id, e.target.value as EstadoTurno)}
+      style={{
+        height: 28,
+        borderRadius: 999,
+        padding: "0 10px",
+        fontSize: 13,
+        fontWeight: 700,
+        background: bg,
+        color: fg,
+        border: "none"
+      }}
+    >
+      {Object.entries(estadoLabel).map(([v, l]) => (
+        <option key={v} value={v}>
+          {l}
+        </option>
+      ))}
+    </select>
+  );
+
+  const botonWhatsapp = (
+    <a
+      href={linkWhatsapp(cliente.telefono, `Hola ${cliente.nombre.split(" ")[0]}, te escribimos por tu turno de ${actividad.nombre} de hoy a las ${formatearHora(new Date(turno.inicio))}.`)}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`Enviar recordatorio por WhatsApp a ${cliente.nombre}`}
+      style={{
+        width: 40,
+        height: 40,
+        flex: "none",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 12,
+        border: `1px solid ${color.borderStrong}`,
+        background: color.surface
+      }}
+    >
+      WA
+    </a>
+  );
+
+  if (modo === "movil") {
+    return (
+      <div style={{ padding: "14px 20px", display: "flex", flexDirection: "column", gap: 8, borderBottom: `1px solid ${color.border}` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontFamily: font.mono, fontSize: 16, fontWeight: 700 }}>{formatearHora(new Date(turno.inicio))}</span>
+          {selectEstado}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 16, fontWeight: 700 }}>{cliente.nombre}</div>
+            <div style={{ fontSize: 13, color: color.textMuted }}>
+              {actividad.nombre} · {grupal ? "Grupal" : "Individual"}
+              {profesional ? ` · ${profesional.nombre}` : ""}
+            </div>
+          </div>
+          {botonWhatsapp}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -243,44 +314,8 @@ function FilaTurno({
         <span style={{ fontSize: 13, color: color.textMuted }}>{grupal ? "Grupal" : "Individual"}</span>
       </span>
       <span style={{ fontSize: 15 }}>{profesional?.nombre ?? "—"}</span>
-      <select
-        value={turno.estado}
-        onChange={(e) => onEstado(turno.id, e.target.value as EstadoTurno)}
-        style={{
-          height: 28,
-          borderRadius: 999,
-          padding: "0 10px",
-          fontSize: 13,
-          fontWeight: 700,
-          background: bg,
-          color: fg,
-          border: "none"
-        }}
-      >
-        {Object.entries(estadoLabel).map(([v, l]) => (
-          <option key={v} value={v}>
-            {l}
-          </option>
-        ))}
-      </select>
-      <a
-        href={linkWhatsapp(cliente.telefono, `Hola ${cliente.nombre.split(" ")[0]}, te escribimos por tu turno de ${actividad.nombre} de hoy a las ${formatearHora(new Date(turno.inicio))}.`)}
-        target="_blank"
-        rel="noreferrer"
-        aria-label={`Enviar recordatorio por WhatsApp a ${cliente.nombre}`}
-        style={{
-          width: 40,
-          height: 40,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          borderRadius: 12,
-          border: `1px solid ${color.borderStrong}`,
-          background: color.surface
-        }}
-      >
-        WA
-      </a>
+      {selectEstado}
+      {botonWhatsapp}
     </div>
   );
 }
