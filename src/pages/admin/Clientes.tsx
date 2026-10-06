@@ -5,10 +5,13 @@ import type { Actividad, Centro, Cliente, EstadoTurno, Profesional, Turno } from
 import AdminLayout from "./AdminLayout";
 import { tokens } from "@/styles/tokens";
 import { Field, PrimaryButton } from "@/components/UI";
+import MaestroDetalle from "@/components/admin/MaestroDetalle";
+import { useModoVista } from "@/lib/useModoVista";
 
 const { color, font } = tokens;
 
 export default function Clientes({ centro }: { centro: Centro }) {
+  const { modo } = useModoVista();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [actividades, setActividades] = useState<Actividad[]>([]);
@@ -101,112 +104,135 @@ export default function Clientes({ centro }: { centro: Centro }) {
         </button>
       </div>
 
-      <div style={{ display: "flex", gap: 24, marginTop: 24, minHeight: 0 }}>
-        <section style={{ width: 360, flex: "none", background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-          <input
-            type="search"
-            placeholder="Buscar por nombre, email, DNI o teléfono"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            style={{ height: 48, boxSizing: "border-box", padding: "0 14px", borderRadius: 12, border: `1px solid ${color.borderStrong}`, fontSize: 14 }}
-          />
-          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: color.textSoft }}>
-            <input type="checkbox" checked={mostrarBaja} onChange={(e) => setMostrarBaja(e.target.checked)} />
-            Mostrar dados de baja
-          </label>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {filtrados.map((c) => {
-              const selected = c.id === selId;
-              const iniciales = c.nombre.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-              const cant = turnos.filter((t) => t.cliente_id === c.id).length;
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => {
-                    setSelId(c.id);
-                    setCreando(false);
-                  }}
-                  aria-pressed={selected}
-                  style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", height: 72, boxSizing: "border-box", padding: "0 14px", borderRadius: 14, textAlign: "left", background: selected ? centro.color_acento : color.surface, border: `1px solid ${selected ? color.ink : color.border}`, opacity: c.activo ? 1 : 0.55 }}
-                >
-                  <span style={{ width: 42, height: 42, flex: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font.mono, fontSize: 13, fontWeight: 600, background: selected ? color.ink : color.bg, color: selected ? centro.color_acento : color.ink }}>
-                    {iniciales}
-                  </span>
-                  <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <span style={{ fontWeight: 700, fontSize: 15 }}>{c.nombre}{!c.activo && " (baja)"}</span>
-                    <span style={{ fontSize: 13, color: color.textSoft }}>{cant} {cant === 1 ? "turno" : "turnos"}</span>
-                  </span>
-                </button>
-              );
-            })}
-            {!filtrados.length && <p style={{ color: color.textMuted, fontSize: 14, padding: 8 }}>Sin clientes todavía.</p>}
-          </div>
-        </section>
-
-        {creando && (
-          <NuevoClienteForm onCancelar={() => setCreando(false)} onCrear={crearCliente} accent={centro.color_acento} />
-        )}
-
-        {!creando && actual && (
-          <section style={{ flex: 1, minWidth: 0, background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 32, display: "flex", flexDirection: "column", gap: 28 }}>
-            <DetalleCliente
-              key={actual.id}
-              cliente={actual}
-              accent={centro.color_acento}
-              onActualizar={actualizarCliente}
+      <MaestroDetalle
+        hayDetalle={creando || !!actual}
+        onVolver={() => {
+          setCreando(false);
+          setSelId(null);
+        }}
+        lista={
+          <section style={{ width: 360, flex: "none", background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            <input
+              type="search"
+              placeholder="Buscar por nombre, email, DNI o teléfono"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              style={{ height: 48, boxSizing: "border-box", padding: "0 14px", borderRadius: 12, border: `1px solid ${color.borderStrong}`, fontSize: 14 }}
             />
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 12 }}>
-              <Stat value={contar("asistio")} label="Asistencias" />
-              <Stat value={contar("cancelado")} label="Cancelaciones" />
-              <Stat value={contar("no_asistio")} label="Faltas sin aviso" />
-              <Stat value={proximos} label="Próximos turnos" />
-            </div>
-
-            <div>
-              <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted, paddingBottom: 12 }}>HISTORIAL DE SERVICIOS UTILIZADOS</div>
-              <div style={{ height: 40, display: "grid", gridTemplateColumns: "90px minmax(0,1fr) minmax(0,1fr) 130px", gap: 16, alignItems: "center", borderBottom: `1px solid ${color.border}`, fontFamily: font.mono, fontSize: 12, letterSpacing: "0.08em", color: color.textMuted }}>
-                <span>FECHA</span>
-                <span>ACTIVIDAD</span>
-                <span>RESPONSABLE</span>
-                <span>ESTADO</span>
-              </div>
-              {historial.map((t) => {
-                const act = actsById.get(t.actividad_id);
-                const pro = t.profesional_id ? prosById.get(t.profesional_id) : null;
-                let bg = color.bg;
-                let fg = color.ink;
-                if (t.estado === "confirmado" || t.estado === "pendiente") bg = centro.color_acento;
-                if (t.estado === "no_asistio") {
-                  bg = color.ink;
-                  fg = "#FFFFFF";
-                }
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: color.textSoft }}>
+              <input type="checkbox" checked={mostrarBaja} onChange={(e) => setMostrarBaja(e.target.checked)} />
+              Mostrar dados de baja
+            </label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {filtrados.map((c) => {
+                const selected = c.id === selId;
+                const iniciales = c.nombre.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+                const cant = turnos.filter((t) => t.cliente_id === c.id).length;
                 return (
-                  <div key={t.id} style={{ height: 56, display: "grid", gridTemplateColumns: "90px minmax(0,1fr) minmax(0,1fr) 130px", gap: 16, alignItems: "center", borderBottom: `1px solid ${color.border}` }}>
-                    <span style={{ fontFamily: font.mono, fontSize: 14, fontWeight: 600 }}>
-                      {new Date(t.inicio).toLocaleDateString("es-AR", { day: "2-digit", month: "short" })}
+                  <button
+                    key={c.id}
+                    onClick={() => {
+                      setSelId(c.id);
+                      setCreando(false);
+                    }}
+                    aria-pressed={selected}
+                    style={{ display: "flex", alignItems: "center", gap: 14, width: "100%", height: 72, boxSizing: "border-box", padding: "0 14px", borderRadius: 14, textAlign: "left", background: selected ? centro.color_acento : color.surface, border: `1px solid ${selected ? color.ink : color.border}`, opacity: c.activo ? 1 : 0.55 }}
+                  >
+                    <span style={{ width: 42, height: 42, flex: "none", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font.mono, fontSize: 13, fontWeight: 600, background: selected ? color.ink : color.bg, color: selected ? centro.color_acento : color.ink }}>
+                      {iniciales}
                     </span>
-                    <span style={{ fontSize: 15, fontWeight: 700 }}>{act?.nombre ?? "—"}</span>
-                    <span style={{ fontSize: 15 }}>{pro?.nombre ?? "—"}</span>
-                    <span>
-                      <span style={{ display: "inline-flex", alignItems: "center", height: 28, padding: "0 12px", borderRadius: 999, fontSize: 13, fontWeight: 700, background: bg, color: fg }}>
-                        {t.estado === "asistio" ? "Asistió" : t.estado === "no_asistio" ? "No asistió" : t.estado === "cancelado" ? "Cancelado" : formatearHora(new Date(t.inicio))}
-                      </span>
+                    <span style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                      <span style={{ fontWeight: 700, fontSize: 15 }}>{c.nombre}{!c.activo && " (baja)"}</span>
+                      <span style={{ fontSize: 13, color: color.textSoft }}>{cant} {cant === 1 ? "turno" : "turnos"}</span>
                     </span>
-                  </div>
+                  </button>
                 );
               })}
-              {!historial.length && <p style={{ color: color.textMuted, fontSize: 14, padding: "16px 0" }}>Todavía no tiene turnos.</p>}
+              {!filtrados.length && <p style={{ color: color.textMuted, fontSize: 14, padding: 8 }}>Sin clientes todavía.</p>}
             </div>
           </section>
-        )}
+        }
+        detalle={
+          creando ? (
+            <NuevoClienteForm onCancelar={() => setCreando(false)} onCrear={crearCliente} accent={centro.color_acento} />
+          ) : actual ? (
+            <section style={{ flex: 1, minWidth: 0, background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 32, display: "flex", flexDirection: "column", gap: 28 }}>
+              <DetalleCliente
+                key={actual.id}
+                cliente={actual}
+                accent={centro.color_acento}
+                onActualizar={actualizarCliente}
+              />
 
-        {!creando && !actual && (
-          <section style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", color: color.textMuted, fontSize: 15 }}>
-            Elegí un cliente de la lista, o creá uno nuevo.
-          </section>
-        )}
-      </div>
+              <div style={{ display: "grid", gridTemplateColumns: modo === "movil" ? "repeat(2, minmax(0,1fr))" : "repeat(4, minmax(0,1fr))", gap: 12 }}>
+                <Stat value={contar("asistio")} label="Asistencias" />
+                <Stat value={contar("cancelado")} label="Cancelaciones" />
+                <Stat value={contar("no_asistio")} label="Faltas sin aviso" />
+                <Stat value={proximos} label="Próximos turnos" />
+              </div>
+
+              <div>
+                <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted, paddingBottom: 12 }}>HISTORIAL DE SERVICIOS UTILIZADOS</div>
+                {modo === "escritorio" && (
+                  <div style={{ height: 40, display: "grid", gridTemplateColumns: "90px minmax(0,1fr) minmax(0,1fr) 130px", gap: 16, alignItems: "center", borderBottom: `1px solid ${color.border}`, fontFamily: font.mono, fontSize: 12, letterSpacing: "0.08em", color: color.textMuted }}>
+                    <span>FECHA</span>
+                    <span>ACTIVIDAD</span>
+                    <span>RESPONSABLE</span>
+                    <span>ESTADO</span>
+                  </div>
+                )}
+                {historial.map((t) => {
+                  const act = actsById.get(t.actividad_id);
+                  const pro = t.profesional_id ? prosById.get(t.profesional_id) : null;
+                  let bg = color.bg;
+                  let fg = color.ink;
+                  if (t.estado === "confirmado" || t.estado === "pendiente") bg = centro.color_acento;
+                  if (t.estado === "no_asistio") {
+                    bg = color.ink;
+                    fg = "#FFFFFF";
+                  }
+                  const chipEstado = (
+                    <span style={{ display: "inline-flex", alignItems: "center", height: 28, padding: "0 12px", borderRadius: 999, fontSize: 13, fontWeight: 700, background: bg, color: fg }}>
+                      {t.estado === "asistio" ? "Asistió" : t.estado === "no_asistio" ? "No asistió" : t.estado === "cancelado" ? "Cancelado" : formatearHora(new Date(t.inicio))}
+                    </span>
+                  );
+
+                  if (modo === "movil") {
+                    return (
+                      <div key={t.id} style={{ padding: "12px 0", display: "flex", flexDirection: "column", gap: 6, borderBottom: `1px solid ${color.border}` }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ fontSize: 15, fontWeight: 700 }}>{act?.nombre ?? "—"}</span>
+                          {chipEstado}
+                        </div>
+                        <div style={{ fontSize: 13, color: color.textMuted }}>
+                          {new Date(t.inicio).toLocaleDateString("es-AR", { day: "2-digit", month: "short" })}
+                          {pro ? ` · ${pro.nombre}` : ""}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={t.id} style={{ height: 56, display: "grid", gridTemplateColumns: "90px minmax(0,1fr) minmax(0,1fr) 130px", gap: 16, alignItems: "center", borderBottom: `1px solid ${color.border}` }}>
+                      <span style={{ fontFamily: font.mono, fontSize: 14, fontWeight: 600 }}>
+                        {new Date(t.inicio).toLocaleDateString("es-AR", { day: "2-digit", month: "short" })}
+                      </span>
+                      <span style={{ fontSize: 15, fontWeight: 700 }}>{act?.nombre ?? "—"}</span>
+                      <span style={{ fontSize: 15 }}>{pro?.nombre ?? "—"}</span>
+                      <span>{chipEstado}</span>
+                    </div>
+                  );
+                })}
+                {!historial.length && <p style={{ color: color.textMuted, fontSize: 14, padding: "16px 0" }}>Todavía no tiene turnos.</p>}
+              </div>
+            </section>
+          ) : (
+            <section style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", justifyContent: "center", color: color.textMuted, fontSize: 15 }}>
+              Elegí un cliente de la lista, o creá uno nuevo.
+            </section>
+          )
+        }
+      />
     </AdminLayout>
   );
 }
@@ -291,6 +317,7 @@ function DetalleCliente({
   accent: string;
   onActualizar: (id: string, cambios: Partial<Cliente>) => Promise<void>;
 }) {
+  const { modo } = useModoVista();
   const [editando, setEditando] = useState(false);
   const [nombre, setNombre] = useState(cliente.nombre);
   const [dni, setDni] = useState(cliente.dni ?? "");
@@ -423,7 +450,7 @@ function DetalleCliente({
 
         {editandoFicha ? (
           <>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: modo === "movil" ? "1fr" : "repeat(2, minmax(0,1fr))", gap: 16 }}>
               {camposMedicos.map((c) =>
                 c.area ? (
                   <div key={c.key} style={{ gridColumn: "1 / -1", display: "flex", flexDirection: "column", gap: 6 }}>
@@ -467,7 +494,7 @@ function DetalleCliente({
             </div>
           </>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0,1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: modo === "movil" ? "1fr" : "repeat(2, minmax(0,1fr))", gap: 12 }}>
             {camposMedicos.map((c) => (
               <div key={c.key} style={{ gridColumn: c.area ? "1 / -1" : undefined }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: color.textMuted }}>{c.label}</div>
