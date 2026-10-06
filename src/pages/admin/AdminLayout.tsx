@@ -1,8 +1,11 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { NavLink } from "react-router-dom";
 import { tokens } from "@/styles/tokens";
 import type { Centro } from "@/lib/database.types";
 import { cerrarSesion } from "@/components/Bloqueo";
+import { useModoVista } from "@/lib/useModoVista";
+import SelectorVista from "@/components/admin/SelectorVista";
+import MenuMovil from "@/components/admin/MenuMovil";
 
 const { color, font } = tokens;
 
@@ -16,6 +19,45 @@ const links = [
 ];
 
 export default function AdminLayout({ centro, children }: { centro: Centro; children: ReactNode }) {
+  const { modo } = useModoVista();
+  const [menuAbierto, setMenuAbierto] = useState(false);
+
+  if (modo === "movil") {
+    return (
+      <div style={{ minHeight: "100vh", background: color.bg }}>
+        <header
+          style={{
+            height: 56,
+            boxSizing: "border-box",
+            padding: "0 16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: color.ink,
+            color: "#FFFFFF"
+          }}
+        >
+          <button
+            onClick={() => setMenuAbierto(true)}
+            aria-label="Abrir menú"
+            style={{ width: 40, height: 40, borderRadius: 10, border: "1px solid #3A3D42", background: "transparent", color: "#FFFFFF", fontSize: 18 }}
+          >
+            ☰
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 10, height: 10, borderRadius: "50%", background: centro.color_acento }} />
+            <span style={{ fontFamily: font.display, fontWeight: 700, fontSize: 18 }}>turnito</span>
+          </div>
+          <SelectorVista />
+        </header>
+
+        {menuAbierto && <MenuMovil centro={centro} links={links} onCerrar={() => setMenuAbierto(false)} />}
+
+        <main style={{ boxSizing: "border-box", padding: 16 }}>{children}</main>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: color.bg }}>
       <aside
@@ -85,7 +127,12 @@ export default function AdminLayout({ centro, children }: { centro: Centro; chil
           </button>
         </div>
       </aside>
-      <main style={{ flex: 1, minWidth: 0, boxSizing: "border-box", padding: 40 }}>{children}</main>
+      <main style={{ flex: 1, minWidth: 0, boxSizing: "border-box", padding: 40 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+          <SelectorVista />
+        </div>
+        {children}
+      </main>
     </div>
   );
 }

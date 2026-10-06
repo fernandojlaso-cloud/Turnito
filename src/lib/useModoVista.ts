@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 export const BREAKPOINT_MOVIL = 768;
 const CLAVE_VISTA_FORZADA = "turnito_vista_forzada";
@@ -12,8 +12,6 @@ function leerVistaForzadaGuardada(): VistaForzada {
     if (valor === "movil" || valor === "escritorio") return valor;
     return null;
   } catch {
-    // localStorage no disponible (navegador en modo privado muy restrictivo):
-    // seguimos en modo automático.
     return null;
   }
 }
@@ -26,9 +24,40 @@ export function calcularModoVista(anchoVentana: number, vistaForzada: VistaForza
   return anchoVentana < BREAKPOINT_MOVIL ? "movil" : "escritorio";
 }
 
+// Estado compartido entre TODOS los componentes que usan este hook (antes
+// cada uno tenía su propia copia separada, por eso el selector no cambiaba
+// la vista real del panel).
+let vistaForzadaActual: VistaForzada = typeof window === "undefined" ? null : leerVistaForzadaGuardada();
+const listeners = new Set<() => void>();
+
+function notificar() {
+  listeners.forEach((l) => l());
+}
+
+function suscribirse(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function obtenerVistaForzada() {
+  return vistaForzadaActual;
+}
+
+function cambiarVistaForzada(vista: VistaForzada) {
+  vistaForzadaActual = vista;
+  try {
+    if (vista) window.localStorage.setItem(CLAVE_VISTA_FORZADA, vista);
+    else window.localStorage.removeItem(CLAVE_VISTA_FORZADA);
+  } catch {
+    // No se pudo guardar la preferencia: la app sigue funcionando igual,
+    // solo que no se va a acordar la próxima vez.
+  }
+  notificar();
+}
+
 export function useModoVista() {
+  const vistaForzada = useSyncExternalStore(suscribirse, obtenerVistaForzada, () => null);
   const [anchoVentana, setAnchoVentana] = useState(() => (typeof window === "undefined" ? 1024 : window.innerWidth));
-  const [vistaForzada, setVistaForzadaState] = useState<VistaForzada>(() => leerVistaForzadaGuardada());
 
   useEffect(() => {
     function onResize() {
@@ -38,20 +67,9 @@ export function useModoVista() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  function setVistaForzada(vista: VistaForzada) {
-    setVistaForzadaState(vista);
-    try {
-      if (vista) window.localStorage.setItem(CLAVE_VISTA_FORZADA, vista);
-      else window.localStorage.removeItem(CLAVE_VISTA_FORZADA);
-    } catch {
-      // No se pudo guardar la preferencia: la app sigue funcionando igual,
-      // solo que no se va a acordar la próxima vez.
-    }
-  }
-
   return {
     modo: calcularModoVista(anchoVentana, vistaForzada),
     vistaForzada,
-    setVistaForzada
+    setVistaForzada: cambiarVistaForzada
   };
 }
