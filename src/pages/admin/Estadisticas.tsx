@@ -4,6 +4,7 @@ import { calcularSlots, formatearHora, linkWhatsapp } from "@/lib/slots";
 import type { Actividad, Centro, Cliente, Disponibilidad, EstadoTurno, Turno } from "@/lib/database.types";
 import AdminLayout from "./AdminLayout";
 import { tokens } from "@/styles/tokens";
+import { useModoVista } from "@/lib/useModoVista";
 
 const { color, font } = tokens;
 
@@ -41,6 +42,7 @@ const estadoLabel: Record<EstadoTurno, string> = {
 };
 
 export default function Estadisticas({ centro }: { centro: Centro }) {
+  const { modo } = useModoVista();
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [disponibilidad, setDisponibilidad] = useState<Disponibilidad[]>([]);
   const [turnos, setTurnos] = useState<Turno[]>([]);
@@ -171,7 +173,7 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
         </p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0,1fr))", gap: 12, margin: "24px 0" }}>
+      <div style={{ display: "grid", gridTemplateColumns: modo === "movil" ? "repeat(2, minmax(0,1fr))" : "repeat(6, minmax(0,1fr))", gap: 12, margin: "24px 0" }}>
         <Stat value={totales.cupos} label="Cupos semanales" />
         <Stat value={totales.reservados} label="Reservados esta semana" />
         <Stat value={totales.libres} label="Disponibles esta semana" />
@@ -181,35 +183,10 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
       </div>
 
       <section style={{ background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, overflow: "hidden" }}>
-        <div
-          style={{
-            height: 48,
-            boxSizing: "border-box",
-            padding: "0 24px",
-            display: "grid",
-            gridTemplateColumns: "minmax(0,1fr) 110px 110px 110px 110px 110px 110px",
-            gap: 16,
-            alignItems: "center",
-            borderBottom: `1px solid ${color.border}`,
-            fontFamily: font.mono,
-            fontSize: 12,
-            letterSpacing: "0.08em",
-            color: color.textMuted
-          }}
-        >
-          <span>ACTIVIDAD</span>
-          <span>CUPOS/SEM</span>
-          <span>RESERV.</span>
-          <span>LIBRES</span>
-          <span>OCUPACIÓN</span>
-          <span>ASISTIÓ</span>
-          <span>CANCELÓ</span>
-        </div>
-        {filas.map((f) => (
+        {modo === "escritorio" && (
           <div
-            key={f.actividad.id}
             style={{
-              height: 60,
+              height: 48,
               boxSizing: "border-box",
               padding: "0 24px",
               display: "grid",
@@ -217,33 +194,78 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
               gap: 16,
               alignItems: "center",
               borderBottom: `1px solid ${color.border}`,
-              opacity: f.actividad.activa ? 1 : 0.5
+              fontFamily: font.mono,
+              fontSize: 12,
+              letterSpacing: "0.08em",
+              color: color.textMuted
             }}
           >
-            <span style={{ fontWeight: 700, fontSize: 15 }}>{f.actividad.nombre}</span>
-            <span style={{ fontFamily: font.mono, fontSize: 14 }}>{f.cupos}</span>
-            <span style={{ fontFamily: font.mono, fontSize: 14 }}>{f.reservados}</span>
-            <span style={{ fontFamily: font.mono, fontSize: 14 }}>{f.libres}</span>
-            <span>
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  height: 26,
-                  padding: "0 10px",
-                  borderRadius: 999,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  background: f.ocupacion >= 80 ? centro.color_acento : color.bg
-                }}
-              >
-                {f.ocupacion}%
-              </span>
-            </span>
-            <span style={{ fontFamily: font.mono, fontSize: 14 }}>{f.asistidos}</span>
-            <span style={{ fontFamily: font.mono, fontSize: 14 }}>{f.cancelados}</span>
+            <span>ACTIVIDAD</span>
+            <span>CUPOS/SEM</span>
+            <span>RESERV.</span>
+            <span>LIBRES</span>
+            <span>OCUPACIÓN</span>
+            <span>ASISTIÓ</span>
+            <span>CANCELÓ</span>
           </div>
-        ))}
+        )}
+        {filas.map((f) => {
+          const chipOcupacion = (
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                height: 26,
+                padding: "0 10px",
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 700,
+                background: f.ocupacion >= 80 ? centro.color_acento : color.bg
+              }}
+            >
+              {f.ocupacion}%
+            </span>
+          );
+
+          if (modo === "movil") {
+            return (
+              <div key={f.actividad.id} style={{ padding: "12px 24px", display: "flex", flexDirection: "column", gap: 6, borderBottom: `1px solid ${color.border}`, opacity: f.actividad.activa ? 1 : 0.5 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontWeight: 700, fontSize: 15 }}>{f.actividad.nombre}</span>
+                  {chipOcupacion}
+                </div>
+                <div style={{ fontFamily: font.mono, fontSize: 13, color: color.textMuted }}>
+                  {f.reservados}/{f.cupos} reservados · {f.libres} libres · {f.asistidos} asistió · {f.cancelados} canceló
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key={f.actividad.id}
+              style={{
+                height: 60,
+                boxSizing: "border-box",
+                padding: "0 24px",
+                display: "grid",
+                gridTemplateColumns: "minmax(0,1fr) 110px 110px 110px 110px 110px 110px",
+                gap: 16,
+                alignItems: "center",
+                borderBottom: `1px solid ${color.border}`,
+                opacity: f.actividad.activa ? 1 : 0.5
+              }}
+            >
+              <span style={{ fontWeight: 700, fontSize: 15 }}>{f.actividad.nombre}</span>
+              <span style={{ fontFamily: font.mono, fontSize: 14 }}>{f.cupos}</span>
+              <span style={{ fontFamily: font.mono, fontSize: 14 }}>{f.reservados}</span>
+              <span style={{ fontFamily: font.mono, fontSize: 14 }}>{f.libres}</span>
+              <span>{chipOcupacion}</span>
+              <span style={{ fontFamily: font.mono, fontSize: 14 }}>{f.asistidos}</span>
+              <span style={{ fontFamily: font.mono, fontSize: 14 }}>{f.cancelados}</span>
+            </div>
+          );
+        })}
         {!cargando && !filas.length && (
           <div style={{ padding: 24, color: color.textMuted, fontSize: 14 }}>Todavía no hay actividades cargadas.</div>
         )}
@@ -354,30 +376,32 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
       </div>
 
       <section style={{ background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, overflow: "hidden" }}>
-        <div
-          style={{
-            height: 48,
-            boxSizing: "border-box",
-            padding: "0 24px",
-            display: "grid",
-            gridTemplateColumns: "110px minmax(0,1fr) minmax(0,1fr) 140px 130px 120px 84px",
-            gap: 16,
-            alignItems: "center",
-            borderBottom: `1px solid ${color.border}`,
-            fontFamily: font.mono,
-            fontSize: 12,
-            letterSpacing: "0.08em",
-            color: color.textMuted
-          }}
-        >
-          <span>FECHA</span>
-          <span>ACTIVIDAD</span>
-          <span>CLIENTE</span>
-          <span>TELÉFONO</span>
-          <span>DNI</span>
-          <span>ESTADO</span>
-          <span>AVISO</span>
-        </div>
+        {modo === "escritorio" && (
+          <div
+            style={{
+              height: 48,
+              boxSizing: "border-box",
+              padding: "0 24px",
+              display: "grid",
+              gridTemplateColumns: "110px minmax(0,1fr) minmax(0,1fr) 140px 130px 120px 84px",
+              gap: 16,
+              alignItems: "center",
+              borderBottom: `1px solid ${color.border}`,
+              fontFamily: font.mono,
+              fontSize: 12,
+              letterSpacing: "0.08em",
+              color: color.textMuted
+            }}
+          >
+            <span>FECHA</span>
+            <span>ACTIVIDAD</span>
+            <span>CLIENTE</span>
+            <span>TELÉFONO</span>
+            <span>DNI</span>
+            <span>ESTADO</span>
+            <span>AVISO</span>
+          </div>
+        )}
         {reservas.map(({ turno, actividad, cliente }) => {
           let bg = color.bg;
           let fg = color.ink;
@@ -386,6 +410,57 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
             bg = color.ink;
             fg = "#FFFFFF";
           }
+          const chipEstado = (
+            <span style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: bg, color: fg }}>
+              {estadoLabel[turno.estado]}
+            </span>
+          );
+          const botonesAviso = (
+            <span style={{ display: "flex", gap: 6, flex: "none" }}>
+              <a
+                href={linkWhatsapp(cliente.telefono, `Hola ${cliente.nombre.split(" ")[0]}, te escribimos por tu turno de ${actividad.nombre}.`)}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Enviar WhatsApp a ${cliente.nombre}`}
+                title="Avisar"
+                style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, border: `1px solid ${color.borderStrong}`, background: color.surface, fontSize: 11, fontWeight: 700 }}
+              >
+                WA
+              </a>
+              <a
+                href={linkWhatsapp(
+                  cliente.telefono,
+                  `Hola ${cliente.nombre.split(" ")[0]}, necesitamos reprogramar o cancelar tu turno de ${actividad.nombre} del ${new Date(turno.inicio).toLocaleDateString("es-AR", { day: "2-digit", month: "short" })} a las ${formatearHora(new Date(turno.inicio))}. ¿Nos escribís para coordinar?`
+                )}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Reprogramar o cancelar el turno de ${cliente.nombre}`}
+                title="Reprogramar / cancelar"
+                style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, border: `1px solid ${color.borderStrong}`, background: "#FCEBD5", fontSize: 14 }}
+              >
+                ↻
+              </a>
+            </span>
+          );
+
+          if (modo === "movil") {
+            return (
+              <div key={turno.id} style={{ padding: "12px 24px", display: "flex", flexDirection: "column", gap: 8, borderBottom: `1px solid ${color.border}` }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700 }}>{cliente.nombre}</span>
+                  {chipEstado}
+                </div>
+                <div style={{ fontSize: 13, color: color.textMuted }}>
+                  {actividad.nombre} · {new Date(turno.inicio).toLocaleDateString("es-AR", { day: "2-digit", month: "short" })} · {formatearHora(new Date(turno.inicio))}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontFamily: font.mono, fontSize: 13, color: color.textMuted }}>{cliente.telefono}</span>
+                  {botonesAviso}
+                </div>
+              </div>
+            );
+          }
+
           return (
             <div
               key={turno.id}
@@ -407,36 +482,8 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
               <span style={{ fontSize: 14, fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{cliente.nombre}</span>
               <span style={{ fontFamily: font.mono, fontSize: 13 }}>{cliente.telefono}</span>
               <span style={{ fontFamily: font.mono, fontSize: 13 }}>{cliente.dni || "—"}</span>
-              <span>
-                <span style={{ display: "inline-flex", alignItems: "center", height: 26, padding: "0 10px", borderRadius: 999, fontSize: 12, fontWeight: 700, background: bg, color: fg }}>
-                  {estadoLabel[turno.estado]}
-                </span>
-              </span>
-              <span style={{ display: "flex", gap: 6 }}>
-                <a
-                  href={linkWhatsapp(cliente.telefono, `Hola ${cliente.nombre.split(" ")[0]}, te escribimos por tu turno de ${actividad.nombre}.`)}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`Enviar WhatsApp a ${cliente.nombre}`}
-                  title="Avisar"
-                  style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, border: `1px solid ${color.borderStrong}`, background: color.surface, fontSize: 11, fontWeight: 700 }}
-                >
-                  WA
-                </a>
-                <a
-                  href={linkWhatsapp(
-                    cliente.telefono,
-                    `Hola ${cliente.nombre.split(" ")[0]}, necesitamos reprogramar o cancelar tu turno de ${actividad.nombre} del ${new Date(turno.inicio).toLocaleDateString("es-AR", { day: "2-digit", month: "short" })} a las ${formatearHora(new Date(turno.inicio))}. ¿Nos escribís para coordinar?`
-                  )}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`Reprogramar o cancelar el turno de ${cliente.nombre}`}
-                  title="Reprogramar / cancelar"
-                  style={{ width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, border: `1px solid ${color.borderStrong}`, background: "#FCEBD5", fontSize: 14 }}
-                >
-                  ↻
-                </a>
-              </span>
+              <span>{chipEstado}</span>
+              {botonesAviso}
             </div>
           );
         })}
