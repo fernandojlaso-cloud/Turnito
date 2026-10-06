@@ -93,15 +93,17 @@ export default function Clientes({ centro }: { centro: Centro }) {
             Cada cliente tiene su ficha con DNI, datos médicos básicos y el historial de todos sus turnos.
           </p>
         </div>
-        <button
-          onClick={() => {
-            setCreando(true);
-            setSelId(null);
-          }}
-          style={{ height: 48, padding: "0 20px", borderRadius: 14, border: 0, background: centro.color_acento, fontWeight: 700, fontSize: 15 }}
-        >
-          + Nuevo cliente
-        </button>
+        {!(modo === "movil" && (creando || !!actual)) && (
+          <button
+            onClick={() => {
+              setCreando(true);
+              setSelId(null);
+            }}
+            style={{ height: 48, padding: "0 20px", borderRadius: 14, border: 0, background: centro.color_acento, fontWeight: 700, fontSize: 15 }}
+          >
+            + Nuevo cliente
+          </button>
+        )}
       </div>
 
       <MaestroDetalle
