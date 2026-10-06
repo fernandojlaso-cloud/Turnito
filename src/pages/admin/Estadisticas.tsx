@@ -165,7 +165,7 @@ export default function Estadisticas({ centro }: { centro: Centro }) {
 
   return (
     <AdminLayout centro={centro}>
-      <div style={{ height: 72, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div style={{ minHeight: 72, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
         <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 32 }}>Estadísticas</h1>
         <p style={{ margin: "6px 0 0", fontSize: 15, color: color.textSoft }}>
           Semana del {inicioSemana.toLocaleDateString("es-AR", { day: "numeric", month: "short" })} · asistencias y

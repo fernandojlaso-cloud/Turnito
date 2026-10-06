@@ -85,7 +85,7 @@ export default function Actividades({ centro }: { centro: Centro }) {
 
   return (
     <AdminLayout centro={centro}>
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", height: 72 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", justifyContent: "space-between", minHeight: 72 }}>
         <div>
           <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 32 }}>Actividades</h1>
           <p style={{ margin: "6px 0 0", fontSize: 15, color: color.textSoft }}>
