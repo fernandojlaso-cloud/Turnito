@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Actividad, Centro, Disponibilidad } from "@/lib/database.types";
+import type { Actividad, CategoriaActividad, Centro, Disponibilidad } from "@/lib/database.types";
 import AdminLayout from "./AdminLayout";
 import { tokens } from "@/styles/tokens";
 import { Field, PrimaryButton } from "@/components/UI";
 import MaestroDetalle from "@/components/admin/MaestroDetalle";
 import { useModoVista } from "@/lib/useModoVista";
+import { CATEGORIAS_ACTIVIDAD, DEPORTES_CANCHA, nombreDesdeCategoria } from "@/lib/categoriasActividad";
 
 const { color, font } = tokens;
 const dias = ["D", "L", "M", "X", "J", "V", "S"]; // índice = getDay()
@@ -32,13 +33,20 @@ export default function Actividades({ centro }: { centro: Centro }) {
     cargar();
   }, [centro.id]);
 
-  async function crearActividad(datos: { nombre: string; codigo: string; tipo: "individual" | "grupal"; duracion_min: number }) {
+  async function crearActividad(datos: {
+    nombre: string;
+    codigo: string;
+    categoria: CategoriaActividad;
+    tipo: "individual" | "grupal";
+    duracion_min: number;
+  }) {
     const { data, error } = await supabase
       .from("actividades")
       .insert({
         centro_id: centro.id,
         nombre: datos.nombre,
         codigo: datos.codigo,
+        categoria: datos.categoria,
         tipo: datos.tipo,
         duracion_min: datos.duracion_min,
         cupo: datos.tipo === "grupal" ? 8 : 1,
@@ -200,6 +208,25 @@ export default function Actividades({ centro }: { centro: Centro }) {
                 <h2 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>{actual.nombre}</h2>
               </div>
 
+              <Row label="CATEGORÍA">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {CATEGORIAS_ACTIVIDAD.map((c) => (
+                    <Chip
+                      key={c.valor}
+                      label={c.etiqueta}
+                      selected={actual.categoria === c.valor}
+                      accent={centro.color_acento}
+                      onClick={() => patch(actual.id, { categoria: c.valor })}
+                    />
+                  ))}
+                </div>
+                {!actual.categoria && (
+                  <p style={{ margin: 0, fontSize: 12, color: color.textMuted }}>
+                    Esta actividad se creó antes de este cambio — elegí a qué categoría corresponde.
+                  </p>
+                )}
+              </Row>
+
               <FotoYDireccion key={actual.id} actividad={actual} onPatch={patch} />
 
               <Row label="TIPO DE TURNO">
@@ -358,24 +385,50 @@ function NuevaActividadForm({
   accent
 }: {
   onCancelar: () => void;
-  onCrear: (datos: { nombre: string; codigo: string; tipo: "individual" | "grupal"; duracion_min: number }) => Promise<boolean>;
+  onCrear: (datos: {
+    nombre: string;
+    codigo: string;
+    categoria: CategoriaActividad;
+    tipo: "individual" | "grupal";
+    duracion_min: number;
+  }) => Promise<boolean>;
   accent: string;
 }) {
-  const [nombre, setNombre] = useState("");
+  const [categoria, setCategoria] = useState<CategoriaActividad | null>(null);
+  const [subNombre, setSubNombre] = useState("");
   const [codigo, setCodigo] = useState("");
   const [tipo, setTipo] = useState<"individual" | "grupal">("individual");
   const [duracion, setDuracion] = useState(50);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const valido = nombre.trim().length > 1 && codigo.trim().length >= 2;
+  function elegirCategoria(c: CategoriaActividad) {
+    setCategoria(c);
+    setSubNombre("");
+    setTipo(c === "pilates" || c === "clases_grupales" ? "grupal" : "individual");
+  }
+
+  const esClasesGrupales = categoria === "clases_grupales";
+  const esCanchas = categoria === "canchas_futbol_padel_tenis";
+
+  const valido =
+    !!categoria &&
+    codigo.trim().length >= 2 &&
+    (!esClasesGrupales || subNombre.trim().length > 1) &&
+    (!esCanchas || !!subNombre);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!valido) return;
+    if (!valido || !categoria) return;
     setGuardando(true);
     setError(null);
-    const ok = await onCrear({ nombre: nombre.trim(), codigo: codigo.trim().toUpperCase(), tipo, duracion_min: duracion });
+    const ok = await onCrear({
+      nombre: nombreDesdeCategoria(categoria, subNombre),
+      codigo: codigo.trim().toUpperCase(),
+      categoria,
+      tipo: esCanchas ? "individual" : tipo,
+      duracion_min: duracion
+    });
     setGuardando(false);
     if (!ok) setError("No se pudo crear la actividad. Probá de nuevo.");
   }
@@ -384,7 +437,55 @@ function NuevaActividadForm({
     <section style={{ flex: 1, minWidth: 0, maxWidth: 480, background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 32, display: "flex", flexDirection: "column", gap: 20 }}>
       <h2 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 24 }}>Nueva actividad</h2>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <Field id="na-nombre" label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Kinesiología" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 700 }}>Categoría</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {CATEGORIAS_ACTIVIDAD.map((c) => (
+              <button
+                type="button"
+                key={c.valor}
+                onClick={() => elegirCategoria(c.valor)}
+                aria-pressed={categoria === c.valor}
+                style={{ height: 40, padding: "0 14px", borderRadius: 999, border: `1px solid ${categoria === c.valor ? color.ink : color.borderStrong}`, background: categoria === c.valor ? accent : color.surface, fontWeight: 700, fontSize: 13 }}
+              >
+                {c.etiqueta}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {esClasesGrupales && (
+          <Field
+            id="na-sub"
+            label="¿Qué tipo de clase?"
+            value={subNombre}
+            onChange={(e) => setSubNombre(e.target.value)}
+            placeholder="Ej. Aeróbica, HIT, Funcional"
+          />
+        )}
+
+        {esCanchas && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>Deporte</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              {DEPORTES_CANCHA.map((d) => (
+                <button
+                  type="button"
+                  key={d}
+                  onClick={() => setSubNombre(d)}
+                  aria-pressed={subNombre === d}
+                  style={{ flex: 1, height: 44, borderRadius: 12, border: `1px solid ${subNombre === d ? color.ink : color.borderStrong}`, background: subNombre === d ? accent : color.surface, fontWeight: 700, fontSize: 14 }}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+            <p style={{ margin: 0, fontSize: 13, color: color.textMuted }}>
+              Las canchas se reservan de una por vez. Después vas a cargar cada cancha de este deporte desde "Profesionales".
+            </p>
+          </div>
+        )}
+
         <Field
           id="na-codigo"
           label="Código corto (2-3 letras, para identificarla)"
@@ -392,22 +493,24 @@ function NuevaActividadForm({
           onChange={(e) => setCodigo(e.target.value.slice(0, 3))}
           placeholder="Ej. KI"
         />
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ fontSize: 13, fontWeight: 700 }}>Tipo de turno</div>
-          <div style={{ display: "flex", padding: 4, gap: 4, borderRadius: 14, background: color.bg, width: 280 }}>
-            {(["individual", "grupal"] as const).map((opt) => (
-              <button
-                type="button"
-                key={opt}
-                onClick={() => setTipo(opt)}
-                aria-pressed={tipo === opt}
-                style={{ flex: 1, height: 40, borderRadius: 10, border: 0, fontSize: 14, fontWeight: 700, background: tipo === opt ? accent : "transparent" }}
-              >
-                {opt === "individual" ? "Individual" : "Grupal"}
-              </button>
-            ))}
+        {!esCanchas && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ fontSize: 13, fontWeight: 700 }}>Tipo de turno</div>
+            <div style={{ display: "flex", padding: 4, gap: 4, borderRadius: 14, background: color.bg, width: 280 }}>
+              {(["individual", "grupal"] as const).map((opt) => (
+                <button
+                  type="button"
+                  key={opt}
+                  onClick={() => setTipo(opt)}
+                  aria-pressed={tipo === opt}
+                  style={{ flex: 1, height: 40, borderRadius: 10, border: 0, fontSize: 14, fontWeight: 700, background: tipo === opt ? accent : "transparent" }}
+                >
+                  {opt === "individual" ? "Individual" : "Grupal"}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 700 }}>Duración (min)</div>
           <div style={{ display: "flex", gap: 8 }}>
