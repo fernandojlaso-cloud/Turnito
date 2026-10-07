@@ -4,6 +4,14 @@
 
 export type TipoActividad = "individual" | "grupal";
 export type EstadoTurno = "pendiente" | "confirmado" | "cancelado" | "asistio" | "no_asistio";
+export type CategoriaActividad =
+  | "consultorio_medico"
+  | "kinesiologia_traumatologia_kiropraxia"
+  | "masajes"
+  | "pilates"
+  | "clases_grupales"
+  | "canchas_futbol_padel_tenis"
+  | "personal_trainer";
 
 export interface Centro {
   id: string;
@@ -23,6 +31,8 @@ export interface Profesional {
   nombre: string;
   iniciales: string;
   activo: boolean;
+  especialidad: string | null;
+  es_cancha: boolean;
 }
 
 export interface Actividad {
@@ -30,6 +40,7 @@ export interface Actividad {
   centro_id: string;
   nombre: string;
   codigo: string;
+  categoria: CategoriaActividad | null;
   tipo: TipoActividad;
   duracion_min: number;
   cupo: number;
@@ -46,6 +57,7 @@ export interface Disponibilidad {
   dia_semana: number; // 0 domingo .. 6 sábado
   hora_inicio: string; // "HH:MM:SS"
   hora_fin: string;
+  solo_socios_activos: boolean;
 }
 
 export interface Cliente {
@@ -63,6 +75,8 @@ export interface Cliente {
   condiciones_medicas: string | null;
   medicacion: string | null;
   observaciones_medicas: string | null;
+  clases_compradas: number;
+  clases_usadas: number;
   creado_en: string;
 }
 
