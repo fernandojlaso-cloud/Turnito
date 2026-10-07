@@ -71,19 +71,18 @@ export default function Actividades({ centro }: { centro: Centro }) {
     await supabase.from("actividades").update(cambios).eq("id", id);
   }
 
-  async function toggleDia(actividadId: string, diaSemana: number) {
-    const existente = disponibilidad.find((d) => d.actividad_id === actividadId && d.dia_semana === diaSemana);
-    if (existente) {
-      setDisponibilidad((prev) => prev.filter((d) => d.id !== existente.id));
-      await supabase.from("disponibilidad").delete().eq("id", existente.id);
-    } else {
-      const { data } = await supabase
-        .from("disponibilidad")
-        .insert({ actividad_id: actividadId, dia_semana: diaSemana, hora_inicio: "09:00", hora_fin: "18:00" })
-        .select()
-        .single();
-      if (data) setDisponibilidad((prev) => [...prev, data]);
-    }
+  async function agregarFranja(actividadId: string, diaSemana: number) {
+    const { data } = await supabase
+      .from("disponibilidad")
+      .insert({ actividad_id: actividadId, dia_semana: diaSemana, hora_inicio: "09:00", hora_fin: "18:00", solo_socios_activos: false })
+      .select()
+      .single();
+    if (data) setDisponibilidad((prev) => [...prev, data]);
+  }
+
+  async function quitarFranja(id: string) {
+    setDisponibilidad((prev) => prev.filter((d) => d.id !== id));
+    await supabase.from("disponibilidad").delete().eq("id", id);
   }
 
   async function editarFranja(id: string, cambios: Partial<Disponibilidad>) {
@@ -265,25 +264,27 @@ export default function Actividades({ centro }: { centro: Centro }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   <div style={{ display: "flex", gap: 8 }}>
                     {dias.map((letra, i) => {
-                      const on = franjasDeActual.some((f) => f.dia_semana === i);
+                      const hay = franjasDeActual.some((f) => f.dia_semana === i);
                       return (
                         <button
                           key={i}
-                          onClick={() => toggleDia(actual.id, i)}
-                          aria-pressed={on}
-                          aria-label={diasLargos[i]}
-                          style={{ width: 48, height: 48, borderRadius: 12, border: `1px solid ${on ? color.ink : color.borderStrong}`, background: on ? centro.color_acento : color.surface, fontSize: 15, fontWeight: 700 }}
+                          onClick={() => agregarFranja(actual.id, i)}
+                          aria-label={`Agregar bloque de horario el ${diasLargos[i]}`}
+                          style={{ width: 48, height: 48, borderRadius: 12, border: `1px solid ${hay ? color.ink : color.borderStrong}`, background: hay ? centro.color_acento : color.surface, fontSize: 15, fontWeight: 700 }}
                         >
                           {letra}
                         </button>
                       );
                     })}
                   </div>
+                  <p style={{ margin: 0, fontSize: 12, color: color.textMuted }}>
+                    Tocá un día para agregar un bloque de horario. Podés agregar más de uno el mismo día (por ejemplo, uno libre y otro "Solo socios activos"). Para borrar un bloque, usá la ✕.
+                  </p>
                   {franjasDeActual
                     .slice()
-                    .sort((a, b) => a.dia_semana - b.dia_semana)
+                    .sort((a, b) => a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio))
                     .map((f) => (
-                      <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14 }}>
+                      <div key={f.id} style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 10, fontSize: 14 }}>
                         <span style={{ width: 90, fontWeight: 700 }}>{diasLargos[f.dia_semana]}</span>
                         <input
                           type="time"
@@ -298,6 +299,21 @@ export default function Actividades({ centro }: { centro: Centro }) {
                           onChange={(e) => editarFranja(f.id, { hora_fin: e.target.value })}
                           style={{ height: 40, borderRadius: 10, border: `1px solid ${color.borderStrong}`, padding: "0 10px" }}
                         />
+                        <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600 }}>
+                          <input
+                            type="checkbox"
+                            checked={f.solo_socios_activos}
+                            onChange={(e) => editarFranja(f.id, { solo_socios_activos: e.target.checked })}
+                          />
+                          Solo socios activos
+                        </label>
+                        <button
+                          onClick={() => quitarFranja(f.id)}
+                          aria-label={`Quitar este bloque de horario del ${diasLargos[f.dia_semana]}`}
+                          style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${color.borderStrong}`, background: color.surface, fontSize: 14 }}
+                        >
+                          ✕
+                        </button>
                       </div>
                     ))}
                 </div>
