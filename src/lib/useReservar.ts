@@ -34,11 +34,15 @@ export function useReservar() {
     setReservando(false);
 
     if (e) {
-      setError(
-        e.message.includes("cupo")
-          ? "Ese horario ya no tiene cupo. Elegí otro."
-          : "No pudimos confirmar el turno. Probá de nuevo."
-      );
+      let mensaje = "No pudimos confirmar el turno. Probá de nuevo.";
+      if (e.message.includes("cupo")) {
+        mensaje = "Ese horario ya no tiene cupo. Elegí otro.";
+      } else if (e.message.includes("socios")) {
+        mensaje = "Este horario es solo para socios activos. Buscá un horario sin esa marca, o date de alta primero con el centro.";
+      } else if (e.message.includes("cancha")) {
+        mensaje = "No quedan canchas libres para ese horario. Elegí otro.";
+      }
+      setError(mensaje);
       return null;
     }
 
