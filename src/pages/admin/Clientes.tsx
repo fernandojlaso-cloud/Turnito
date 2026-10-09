@@ -333,6 +333,18 @@ function DetalleCliente({
   );
   const [guardandoFicha, setGuardandoFicha] = useState(false);
 
+  const [editandoClases, setEditandoClases] = useState(false);
+  const [clasesCompradas, setClasesCompradas] = useState(String(cliente.clases_compradas));
+  const [guardandoClases, setGuardandoClases] = useState(false);
+
+  async function guardarClases() {
+    setGuardandoClases(true);
+    const valor = Math.max(0, parseInt(clasesCompradas, 10) || 0);
+    await onActualizar(cliente.id, { clases_compradas: valor });
+    setGuardandoClases(false);
+    setEditandoClases(false);
+  }
+
   async function guardar() {
     setGuardando(true);
     await onActualizar(cliente.id, { nombre, dni: dni.trim() || null, email, telefono });
@@ -505,6 +517,64 @@ function DetalleCliente({
             ))}
           </div>
         )}
+      </div>
+
+      <div style={{ background: color.bg, borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted }}>CLASES (PILATES / CLASES GRUPALES)</div>
+          {!editandoClases && (
+            <button
+              onClick={() => setEditandoClases(true)}
+              style={{ height: 36, padding: "0 14px", borderRadius: 10, border: `1px solid ${color.borderStrong}`, background: color.surface, fontWeight: 700, fontSize: 13 }}
+            >
+              Editar
+            </button>
+          )}
+        </div>
+
+        {editandoClases ? (
+          <>
+            <Field
+              id="cl-compradas"
+              label="Clases compradas"
+              type="number"
+              value={clasesCompradas}
+              onChange={(e) => setClasesCompradas(e.target.value)}
+            />
+            <div style={{ display: "flex", gap: 12 }}>
+              <button
+                onClick={() => {
+                  setEditandoClases(false);
+                  setClasesCompradas(String(cliente.clases_compradas));
+                }}
+                style={{ height: 44, padding: "0 18px", borderRadius: 12, border: `1px solid ${color.borderStrong}`, background: color.surface, fontWeight: 700, fontSize: 14 }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={guardarClases}
+                disabled={guardandoClases}
+                style={{ height: 44, padding: "0 18px", borderRadius: 12, border: 0, background: accent, fontWeight: 700, fontSize: 14 }}
+              >
+                {guardandoClases ? "Guardando…" : "Guardar"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <div style={{ display: "flex", gap: 24 }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: color.textMuted }}>COMPRADAS</div>
+              <div style={{ fontFamily: font.display, fontWeight: 600, fontSize: 28 }}>{cliente.clases_compradas}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: color.textMuted }}>USADAS</div>
+              <div style={{ fontFamily: font.display, fontWeight: 600, fontSize: 28 }}>{cliente.clases_usadas}</div>
+            </div>
+          </div>
+        )}
+        <p style={{ margin: 0, fontSize: 12, color: color.textMuted }}>
+          Las usadas se suman solas cada vez que se escanea el QR de acceso en Pilates o clases grupales. Sin precios: esto es solo un contador.
+        </p>
       </div>
     </div>
   );
