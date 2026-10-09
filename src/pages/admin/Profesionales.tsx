@@ -56,20 +56,61 @@ export default function Profesionales({ centro }: { centro: Centro }) {
   }
 
   async function actualizar(id: string, cambios: Partial<Profesional>) {
-    setProfesionales((prev) => prev.map((p) => (p.id === id ? { ...p, ...cambios } : p)));
+    const nuevosProfesionales = profesionales.map((p) => (p.id === id ? { ...p, ...cambios } : p));
+    setProfesionales(nuevosProfesionales);
     await supabase.from("profesionales").update(cambios).eq("id", id);
+
+    if ("activo" in cambios) {
+      const profesional = nuevosProfesionales.find((p) => p.id === id);
+      if (profesional?.es_cancha) {
+        const actividadesVinculadas = vinculos.filter((v) => v.profesional_id === id).map((v) => v.actividad_id);
+        for (const actividadId of actividadesVinculadas) {
+          await sincronizarCupoCancha(actividadId, nuevosProfesionales, vinculos);
+        }
+      }
+    }
   }
 
   async function toggleActividad(actividadId: string) {
     if (!selId) return;
     const existe = vinculos.some((v) => v.profesional_id === selId && v.actividad_id === actividadId);
+    const nuevosVinculos = existe
+      ? vinculos.filter((v) => !(v.profesional_id === selId && v.actividad_id === actividadId))
+      : [...vinculos, { profesional_id: selId, actividad_id: actividadId }];
+    setVinculos(nuevosVinculos);
+
     if (existe) {
-      setVinculos((prev) => prev.filter((v) => !(v.profesional_id === selId && v.actividad_id === actividadId)));
       await supabase.from("actividad_profesionales").delete().eq("profesional_id", selId).eq("actividad_id", actividadId);
     } else {
-      setVinculos((prev) => [...prev, { profesional_id: selId, actividad_id: actividadId }]);
       await supabase.from("actividad_profesionales").insert({ profesional_id: selId, actividad_id: actividadId });
     }
+
+    // Para canchas, el cupo no se escribe a mano: se recalcula solo, según
+    // cuántas canchas activas quedaron vinculadas a esta actividad.
+    await sincronizarCupoCancha(actividadId, profesionales, nuevosVinculos);
+  }
+
+  function contarCanchasActivas(
+    actividadId: string,
+    profesionalesActuales: Profesional[],
+    vinculosActuales: { actividad_id: string; profesional_id: string }[]
+  ) {
+    return profesionalesActuales.filter(
+      (p) => p.es_cancha && p.activo && vinculosActuales.some((v) => v.actividad_id === actividadId && v.profesional_id === p.id)
+    ).length;
+  }
+
+  async function sincronizarCupoCancha(
+    actividadId: string,
+    profesionalesActuales: Profesional[],
+    vinculosActuales: { actividad_id: string; profesional_id: string }[]
+  ) {
+    const actividad = actividades.find((a) => a.id === actividadId);
+    if (!actividad || actividad.categoria !== "canchas_futbol_padel_tenis") return;
+    const nuevoCupo = contarCanchasActivas(actividadId, profesionalesActuales, vinculosActuales);
+    if (nuevoCupo === actividad.cupo) return;
+    setActividades((prev) => prev.map((a) => (a.id === actividadId ? { ...a, cupo: nuevoCupo } : a)));
+    await supabase.from("actividades").update({ cupo: nuevoCupo }).eq("id", actividadId);
   }
 
   const actual = profesionales.find((p) => p.id === selId) ?? null;

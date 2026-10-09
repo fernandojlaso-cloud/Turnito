@@ -49,7 +49,7 @@ export default function Actividades({ centro }: { centro: Centro }) {
         categoria: datos.categoria,
         tipo: datos.tipo,
         duracion_min: datos.duracion_min,
-        cupo: datos.tipo === "grupal" ? 8 : 1,
+        cupo: datos.categoria === "canchas_futbol_padel_tenis" ? 0 : datos.tipo === "grupal" ? 8 : 1,
         cancelacion_horas: 2,
         activa: true,
         orden: actividades.length
@@ -228,15 +228,23 @@ export default function Actividades({ centro }: { centro: Centro }) {
 
               <FotoYDireccion key={actual.id} actividad={actual} onPatch={patch} />
 
-              <Row label="TIPO DE TURNO">
-                <Segmented
-                  options={["individual", "grupal"]}
-                  labels={["Individual", "Grupal"]}
-                  value={actual.tipo}
-                  accent={centro.color_acento}
-                  onChange={(v) => patch(actual.id, { tipo: v as Actividad["tipo"], cupo: v === "grupal" ? Math.max(actual.cupo, 8) : 1 })}
-                />
-              </Row>
+              {actual.categoria === "canchas_futbol_padel_tenis" ? (
+                <Row label="TIPO DE TURNO">
+                  <p style={{ margin: 0, fontSize: 14, color: color.textSoft }}>
+                    Grupal (fijo para canchas: no se puede cambiar).
+                  </p>
+                </Row>
+              ) : (
+                <Row label="TIPO DE TURNO">
+                  <Segmented
+                    options={["individual", "grupal"]}
+                    labels={["Individual", "Grupal"]}
+                    value={actual.tipo}
+                    accent={centro.color_acento}
+                    onChange={(v) => patch(actual.id, { tipo: v as Actividad["tipo"], cupo: v === "grupal" ? Math.max(actual.cupo, 8) : 1 })}
+                  />
+                </Row>
+              )}
 
               <Row label="DURACIÓN (MIN)">
                 <div style={{ display: "flex", gap: 8 }}>
@@ -246,9 +254,17 @@ export default function Actividades({ centro }: { centro: Centro }) {
                 </div>
               </Row>
 
-              {actual.tipo === "grupal" && (
+              {actual.tipo === "grupal" && actual.categoria !== "canchas_futbol_padel_tenis" && (
                 <Row label="CUPO POR TURNO">
                   <Stepper value={actual.cupo} min={2} max={40} onChange={(v) => patch(actual.id, { cupo: v })} suffix="personas" />
+                </Row>
+              )}
+
+              {actual.categoria === "canchas_futbol_padel_tenis" && (
+                <Row label="CANCHAS DISPONIBLES POR TURNO">
+                  <p style={{ margin: 0, fontSize: 14, color: color.textSoft }}>
+                    {actual.cupo} {actual.cupo === 1 ? "cancha vinculada y activa" : "canchas vinculadas y activas"}. Se calcula solo: para sumar o quitar canchas, entrá a "Profesionales".
+                  </p>
                 </Row>
               )}
 
@@ -442,7 +458,7 @@ function NuevaActividadForm({
       nombre: nombreDesdeCategoria(categoria, subNombre),
       codigo: codigo.trim().toUpperCase(),
       categoria,
-      tipo: esCanchas ? "individual" : tipo,
+      tipo: esCanchas ? "grupal" : tipo,
       duracion_min: duracion
     });
     setGuardando(false);
