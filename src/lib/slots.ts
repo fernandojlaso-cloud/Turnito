@@ -18,7 +18,7 @@ export function calcularSlots(
   turnosDelDia: Turno[]
 ): Slot[] {
   const diaSemana = dia.getDay();
-  const franjas = disponibilidad.filter((d) => d.dia_semana === diaSemana);
+  const franjas = disponibilidad.filter((d) => d.actividad_id === actividad.id && d.dia_semana === diaSemana);
   const slots: Slot[] = [];
 
   for (const franja of franjas) {
