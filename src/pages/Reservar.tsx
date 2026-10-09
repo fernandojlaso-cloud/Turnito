@@ -188,11 +188,18 @@ export default function Reservar() {
                       disabled={!s.disponible}
                       selected={slotIdx === i}
                       accent={accent}
+                      soloSocios={s.soloSocios}
                       onClick={() => setSlotIdx(i)}
                     />
                   ))}
                   {!slots.length && <p style={{ color: color.textMuted }}>Sin horarios disponibles ese día.</p>}
                 </div>
+
+                {slotElegido?.soloSocios && (
+                  <p style={{ marginTop: 14, fontSize: 14, color: "#8A1418", lineHeight: 1.5, fontWeight: 600 }}>
+                    ⭐ Este horario es solo para socios activos. Si no sos socio, elegí otro horario o date de alta primero con el centro.
+                  </p>
+                )}
 
                 <p style={{ marginTop: 16, fontSize: 14, color: color.textSoft, lineHeight: 1.5 }}>
                   {actividad.tipo === "grupal"

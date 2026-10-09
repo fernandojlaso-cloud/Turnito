@@ -5,6 +5,7 @@ export interface Slot {
   fin: Date;
   disponible: boolean;
   cuposLibres: number | null; // null en individuales
+  soloSocios: boolean;
 }
 
 /** Arma la grilla de horarios posibles de una actividad para un día dado,
@@ -43,7 +44,7 @@ export function calcularSlots(
       const cuposLibres = actividad.tipo === "grupal" ? actividad.cupo - ocupantes : null;
       const disponible = actividad.tipo === "grupal" ? (cuposLibres as number) > 0 : ocupantes === 0;
 
-      slots.push({ inicio, fin, disponible, cuposLibres });
+      slots.push({ inicio, fin, disponible, cuposLibres, soloSocios: franja.solo_socios_activos });
       cursor = new Date(cursor.getTime() + actividad.duracion_min * 60000);
     }
   }

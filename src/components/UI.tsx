@@ -69,6 +69,7 @@ export function SlotButton({
   disabled,
   selected,
   accent,
+  soloSocios,
   onClick
 }: {
   time: string;
@@ -76,6 +77,7 @@ export function SlotButton({
   disabled: boolean;
   selected: boolean;
   accent: string;
+  soloSocios?: boolean;
   onClick: () => void;
 }) {
   return (
@@ -84,6 +86,7 @@ export function SlotButton({
       disabled={disabled}
       aria-pressed={selected}
       style={{
+        position: "relative",
         height: 64,
         display: "flex",
         flexDirection: "column",
@@ -96,6 +99,15 @@ export function SlotButton({
         color: disabled ? "#8A8F96" : color.ink
       }}
     >
+      {soloSocios && (
+        <span
+          aria-hidden="true"
+          title="Solo para socios activos"
+          style={{ position: "absolute", top: 4, right: 6, fontSize: 11, lineHeight: 1 }}
+        >
+          ⭐
+        </span>
+      )}
       <span
         style={{
           fontFamily: font.mono,
