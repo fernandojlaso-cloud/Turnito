@@ -80,6 +80,18 @@ export default function Actividades({ centro }: { centro: Centro }) {
     if (data) setDisponibilidad((prev) => [...prev, data]);
   }
 
+  async function toggleDia(actividadId: string, diaSemana: number) {
+    const franjasDelDia = disponibilidad.filter(
+      (d) => d.actividad_id === actividadId && d.dia_semana === diaSemana
+    );
+    if (franjasDelDia.length > 0) {
+      setDisponibilidad((prev) => prev.filter((d) => !(d.actividad_id === actividadId && d.dia_semana === diaSemana)));
+      await supabase.from("disponibilidad").delete().eq("actividad_id", actividadId).eq("dia_semana", diaSemana);
+    } else {
+      await agregarFranja(actividadId, diaSemana);
+    }
+  }
+
   async function quitarFranja(id: string) {
     setDisponibilidad((prev) => prev.filter((d) => d.id !== id));
     await supabase.from("disponibilidad").delete().eq("id", id);
@@ -284,8 +296,8 @@ export default function Actividades({ centro }: { centro: Centro }) {
                       return (
                         <button
                           key={i}
-                          onClick={() => agregarFranja(actual.id, i)}
-                          aria-label={`Agregar bloque de horario el ${diasLargos[i]}`}
+                          onClick={() => toggleDia(actual.id, i)}
+                          aria-label={hay ? `Borrar todos los bloques de horario del ${diasLargos[i]}` : `Agregar un bloque de horario el ${diasLargos[i]}`}
                           style={{ width: 48, height: 48, borderRadius: 12, border: `1px solid ${hay ? color.ink : color.borderStrong}`, background: hay ? centro.color_acento : color.surface, fontSize: 15, fontWeight: 700 }}
                         >
                           {letra}
@@ -294,7 +306,7 @@ export default function Actividades({ centro }: { centro: Centro }) {
                     })}
                   </div>
                   <p style={{ margin: 0, fontSize: 12, color: color.textMuted }}>
-                    Tocá un día para agregar un bloque de horario. Podés agregar más de uno el mismo día (por ejemplo, uno libre y otro "Solo socios activos"). Para borrar un bloque, usá la ✕.
+                    Tocá un día para agregar un bloque de horario de 09:00 a 18:00. Volvé a tocar esa misma letra para borrar TODOS los bloques de ese día y dejarlo en blanco. Para agregar otro bloque más al mismo día sin borrar el que ya tiene (por ejemplo, uno libre y otro "Solo socios activos"), usá el botón "+" de ese bloque. Para borrar un solo bloque, usá la ✕.
                   </p>
                   {franjasDeActual
                     .slice()
@@ -323,6 +335,13 @@ export default function Actividades({ centro }: { centro: Centro }) {
                           />
                           Solo socios activos
                         </label>
+                        <button
+                          onClick={() => agregarFranja(actual.id, f.dia_semana)}
+                          aria-label={`Agregar otro bloque de horario el ${diasLargos[f.dia_semana]}`}
+                          style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${color.borderStrong}`, background: color.surface, fontSize: 16, fontWeight: 700 }}
+                        >
+                          +
+                        </button>
                         <button
                           onClick={() => quitarFranja(f.id)}
                           aria-label={`Quitar este bloque de horario del ${diasLargos[f.dia_semana]}`}
