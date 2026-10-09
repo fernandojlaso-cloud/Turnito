@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import type { Actividad, CategoriaActividad, Centro, Disponibilidad } from "@/lib/database.types";
+import type { Actividad, CategoriaActividad, Centro, Disponibilidad, Profesional } from "@/lib/database.types";
 import AdminLayout from "./AdminLayout";
 import { tokens } from "@/styles/tokens";
 import { Field, PrimaryButton } from "@/components/UI";
@@ -16,17 +16,23 @@ export default function Actividades({ centro }: { centro: Centro }) {
   const { modo } = useModoVista();
   const [actividades, setActividades] = useState<Actividad[]>([]);
   const [disponibilidad, setDisponibilidad] = useState<Disponibilidad[]>([]);
+  const [profesionales, setProfesionales] = useState<Profesional[]>([]);
+  const [vinculos, setVinculos] = useState<{ actividad_id: string; profesional_id: string }[]>([]);
   const [selId, setSelId] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
 
   useEffect(() => {
     async function cargar() {
-      const [{ data: acts }, { data: disp }] = await Promise.all([
+      const [{ data: acts }, { data: disp }, { data: pros }, { data: rel }] = await Promise.all([
         supabase.from("actividades").select("*").eq("centro_id", centro.id).order("orden"),
-        supabase.from("disponibilidad").select("*")
+        supabase.from("disponibilidad").select("*"),
+        supabase.from("profesionales").select("*").eq("centro_id", centro.id).order("nombre"),
+        supabase.from("actividad_profesionales").select("actividad_id, profesional_id")
       ]);
       setActividades(acts ?? []);
       setDisponibilidad(disp ?? []);
+      setProfesionales((pros ?? []) as Profesional[]);
+      setVinculos((rel ?? []) as { actividad_id: string; profesional_id: string }[]);
       setSelId((acts ?? [])[0]?.id ?? null);
       setCreando(!(acts ?? []).length);
     }
@@ -73,6 +79,21 @@ export default function Actividades({ centro }: { centro: Centro }) {
     await supabase.from("actividades").update(cambios).eq("id", id);
   }
 
+  async function toggleProfesionalDeActividad(profesionalId: string) {
+    if (!actual) return;
+    const existe = vinculos.some((v) => v.actividad_id === actual.id && v.profesional_id === profesionalId);
+    const nuevosVinculos = existe
+      ? vinculos.filter((v) => !(v.actividad_id === actual.id && v.profesional_id === profesionalId))
+      : [...vinculos, { actividad_id: actual.id, profesional_id: profesionalId }];
+    setVinculos(nuevosVinculos);
+
+    if (existe) {
+      await supabase.from("actividad_profesionales").delete().eq("actividad_id", actual.id).eq("profesional_id", profesionalId);
+    } else {
+      await supabase.from("actividad_profesionales").insert({ actividad_id: actual.id, profesional_id: profesionalId });
+    }
+  }
+
   async function agregarFranja(actividadId: string, diaSemana: number) {
     const { data } = await supabase
       .from("disponibilidad")
@@ -105,6 +126,7 @@ export default function Actividades({ centro }: { centro: Centro }) {
   }
 
   const franjasDeActual = actual ? disponibilidad.filter((d) => d.actividad_id === actual.id) : [];
+  const profesionalesHumanos = profesionales.filter((p) => !p.es_cancha);
 
   return (
     <AdminLayout centro={centro}>
@@ -250,6 +272,30 @@ export default function Actividades({ centro }: { centro: Centro }) {
               )}
 
               <FotoYDireccion key={actual.id} actividad={actual} onPatch={patch} />
+
+              {actual.categoria !== "canchas_futbol_padel_tenis" && (
+                <Row label="PROFESIONALES">
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {profesionalesHumanos.map((p) => {
+                      const asignado = vinculos.some((v) => v.actividad_id === actual.id && v.profesional_id === p.id);
+                      return (
+                        <Chip
+                          key={p.id}
+                          label={p.nombre + (!p.activo ? " (baja)" : "")}
+                          selected={asignado}
+                          accent={centro.color_acento}
+                          onClick={() => toggleProfesionalDeActividad(p.id)}
+                        />
+                      );
+                    })}
+                  </div>
+                  {!profesionalesHumanos.length && (
+                    <p style={{ margin: 0, fontSize: 14, color: color.textMuted }}>
+                      Todavía no hay profesionales cargados. Creá el primero desde "Profesionales".
+                    </p>
+                  )}
+                </Row>
+              )}
 
               {actual.categoria === "canchas_futbol_padel_tenis" ? (
                 <Row label="TIPO DE TURNO">
