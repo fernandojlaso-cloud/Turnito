@@ -41,10 +41,10 @@ export default function Profesionales({ centro }: { centro: Centro }) {
     [actividades, vinculos, selId]
   );
 
-  async function crear(nombre: string, iniciales: string) {
+  async function crear(nombre: string, iniciales: string, esCancha: boolean) {
     const { data, error } = await supabase
       .from("profesionales")
-      .insert({ centro_id: centro.id, nombre, iniciales, activo: true })
+      .insert({ centro_id: centro.id, nombre, iniciales, activo: true, es_cancha: esCancha })
       .select()
       .single();
     if (!error && data) {
@@ -177,9 +177,10 @@ function NuevoProfesionalForm({
   accent
 }: {
   onCancelar: () => void;
-  onCrear: (nombre: string, iniciales: string) => Promise<boolean>;
+  onCrear: (nombre: string, iniciales: string, esCancha: boolean) => Promise<boolean>;
   accent: string;
 }) {
+  const [esCancha, setEsCancha] = useState(false);
   const [nombre, setNombre] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -200,7 +201,7 @@ function NuevoProfesionalForm({
     if (!valido) return;
     setGuardando(true);
     setError(null);
-    const ok = await onCrear(nombre.trim(), iniciales || "??");
+    const ok = await onCrear(nombre.trim(), esCancha ? "⚽" : iniciales || "??", esCancha);
     setGuardando(false);
     if (!ok) setError("No se pudo crear. Probá de nuevo.");
   }
@@ -209,7 +210,17 @@ function NuevoProfesionalForm({
     <section style={{ flex: 1, minWidth: 0, maxWidth: 420, background: color.surface, border: `1px solid ${color.border}`, borderRadius: 20, padding: 32, display: "flex", flexDirection: "column", gap: 20 }}>
       <h2 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 24 }}>Nuevo profesional</h2>
       <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <Field id="np-nombre" label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Ej. Prof. Julieta D." />
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600 }}>
+          <input type="checkbox" checked={esCancha} onChange={(e) => setEsCancha(e.target.checked)} />
+          Es una cancha (fútbol, pádel o tenis), no una persona
+        </label>
+        <Field
+          id="np-nombre"
+          label={esCancha ? "Nombre de la cancha" : "Nombre"}
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          placeholder={esCancha ? "Ej. Cancha de pádel 1" : "Ej. Prof. Julieta D."}
+        />
         {error && <p style={{ color: "#8A1418", fontSize: 14, margin: 0 }}>{error}</p>}
         <div style={{ display: "flex", gap: 12 }}>
           <button
@@ -241,12 +252,15 @@ function DetalleProfesional({
 }) {
   const [editando, setEditando] = useState(false);
   const [nombre, setNombre] = useState(profesional.nombre);
+  const [especialidad, setEspecialidad] = useState(profesional.especialidad ?? "");
   const [guardando, setGuardando] = useState(false);
 
   async function guardar() {
     setGuardando(true);
-    const iniciales = nombre.trim().split(" ").map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "??";
-    await onActualizar(profesional.id, { nombre, iniciales });
+    const iniciales = profesional.es_cancha
+      ? profesional.iniciales
+      : nombre.trim().split(" ").map((p) => p[0]).filter(Boolean).slice(0, 2).join("").toUpperCase() || "??";
+    await onActualizar(profesional.id, { nombre, iniciales, especialidad: especialidad.trim() || null });
     setGuardando(false);
     setEditando(false);
   }
@@ -254,12 +268,22 @@ function DetalleProfesional({
   if (editando) {
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 360 }}>
-        <Field id="ep-nombre" label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <Field id="ep-nombre" label={profesional.es_cancha ? "Nombre de la cancha" : "Nombre"} value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        {!profesional.es_cancha && (
+          <Field
+            id="ep-especialidad"
+            label="Especialidad (opcional)"
+            value={especialidad}
+            onChange={(e) => setEspecialidad(e.target.value)}
+            placeholder="Ej. Dermatología, Oculista"
+          />
+        )}
         <div style={{ display: "flex", gap: 12 }}>
           <button
             onClick={() => {
               setEditando(false);
               setNombre(profesional.nombre);
+              setEspecialidad(profesional.especialidad ?? "");
             }}
             style={{ flex: 1, height: 44, borderRadius: 12, border: `1px solid ${color.borderStrong}`, background: color.surface, fontWeight: 700, fontSize: 14 }}
           >
@@ -281,7 +305,12 @@ function DetalleProfesional({
         <div style={{ width: 56, height: 56, borderRadius: "50%", background: color.ink, color: accent, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: font.mono, fontSize: 16, fontWeight: 600 }}>
           {profesional.iniciales}
         </div>
-        <h2 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 24 }}>{profesional.nombre}</h2>
+        <div>
+          <h2 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 24 }}>{profesional.nombre}</h2>
+          {profesional.especialidad && (
+            <p style={{ margin: "2px 0 0", fontSize: 14, color: color.textSoft }}>{profesional.especialidad}</p>
+          )}
+        </div>
       </div>
       <div style={{ display: "flex", gap: 10 }}>
         <button
