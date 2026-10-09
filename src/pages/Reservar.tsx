@@ -82,6 +82,19 @@ export default function Reservar() {
     }
   }
 
+  // Después de reservar, permite volver al Paso 1 para reservar otra
+  // actividad en la misma visita, sin perder los datos de contacto ya
+  // escritos (nombre, email, teléfono, DNI quedan como estaban).
+  function volverAlInicio() {
+    setStep(1);
+    setActividadId(null);
+    setDiaIdx(0);
+    setSlotIdx(null);
+    setTurnosDelDia([]);
+    setTurnoIdCreado(null);
+    setQrDataUrl(null);
+  }
+
   if (loading) return <Centered>Cargando…</Centered>;
   if (error || !centro) return <Centered>{error ?? "Centro no encontrado."}</Centered>;
   if (!centro.aprobado) return <Centered>Este centro todavía no está disponible.</Centered>;
@@ -244,6 +257,7 @@ export default function Reservar() {
                 politica={`Gratis hasta ${actividad.cancelacion_horas} h antes`}
                 turnoId={turnoIdCreado}
                 qrDataUrl={qrDataUrl}
+                onVolver={volverAlInicio}
               />
             )}
           </div>
@@ -339,7 +353,8 @@ function Confirmacion({
   hora,
   politica,
   turnoId,
-  qrDataUrl
+  qrDataUrl,
+  onVolver
 }: {
   centroTelefonoWhatsapp: string | null;
   accent: string;
@@ -350,6 +365,7 @@ function Confirmacion({
   politica: string;
   turnoId: string | null;
   qrDataUrl: string | null;
+  onVolver: () => void;
 }) {
   const wa = centroTelefonoWhatsapp
     ? linkWhatsapp(centroTelefonoWhatsapp, `¡Hola! Quiero avisar sobre mi turno de ${actividadNombre} (${diaLargo}, ${hora}).`)
@@ -415,6 +431,24 @@ function Confirmacion({
         </div>
       )}
       {turnoId && <p style={{ fontSize: 12, color: color.textMuted, textAlign: "center" }}>Código de turno: {turnoId.slice(0, 8)}</p>}
+
+      <button
+        onClick={onVolver}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: 56,
+          borderRadius: 14,
+          border: `1px solid ${color.borderStrong}`,
+          background: color.surface,
+          color: color.ink,
+          fontWeight: 700,
+          fontSize: 16
+        }}
+      >
+        ← Volver a reservar
+      </button>
     </div>
   );
 }
