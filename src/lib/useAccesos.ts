@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { supabase } from "./supabase";
-import { validarEscaneo, tieneAlertaMedica, type ResultadoEscaneo } from "./accesosLogic";
+import { validarEscaneo, tieneAlertaMedica, debeDescontarClase, type ResultadoEscaneo } from "./accesosLogic";
 import type { Centro } from "./database.types";
 
 export interface EscaneoUI {
@@ -9,6 +9,7 @@ export interface EscaneoUI {
   actividadNombre?: string;
   hora?: string;
   alertaMedica?: boolean;
+  sinClasesDisponibles?: boolean;
 }
 
 export function useAccesos(centro: Centro) {
@@ -31,13 +32,21 @@ export function useAccesos(centro: Centro) {
 
     await supabase.from("turnos").update({ estado: "asistio", checkin_en: new Date().toISOString() }).eq("id", turnoId);
 
+    let sinClasesDisponibles = false;
+    if (cliente && debeDescontarClase(actividad)) {
+      const nuevasUsadas = (cliente.clases_usadas ?? 0) + 1;
+      await supabase.from("clientes").update({ clases_usadas: nuevasUsadas }).eq("id", cliente.id);
+      sinClasesDisponibles = nuevasUsadas >= (cliente.clases_compradas ?? 0);
+    }
+
     setProcesando(false);
     return {
       resultado,
       clienteNombre: cliente?.nombre,
       actividadNombre: actividad?.nombre,
       hora: new Date(turno.inicio).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
-      alertaMedica: cliente ? tieneAlertaMedica(cliente) : false
+      alertaMedica: cliente ? tieneAlertaMedica(cliente) : false,
+      sinClasesDisponibles
     };
   }
 

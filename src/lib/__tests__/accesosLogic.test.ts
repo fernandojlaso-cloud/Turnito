@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validarEscaneo, tieneAlertaMedica } from "../accesosLogic";
+import { validarEscaneo, tieneAlertaMedica, debeDescontarClase } from "../accesosLogic";
 
 const CENTRO_A = "11111111-1111-1111-1111-111111111111";
 const CENTRO_B = "22222222-2222-2222-2222-222222222222";
@@ -79,5 +79,25 @@ describe("tieneAlertaMedica", () => {
     expect(
       tieneAlertaMedica({ alergias: null, condiciones_medicas: null, medicacion: "Insulina", observaciones_medicas: null })
     ).toBe(true);
+  });
+});
+
+describe("debeDescontarClase", () => {
+  it("es true para pilates", () => {
+    expect(debeDescontarClase({ categoria: "pilates" })).toBe(true);
+  });
+
+  it("es true para clases grupales", () => {
+    expect(debeDescontarClase({ categoria: "clases_grupales" })).toBe(true);
+  });
+
+  it("es false para otras categorías", () => {
+    expect(debeDescontarClase({ categoria: "masajes" })).toBe(false);
+    expect(debeDescontarClase({ categoria: "canchas_futbol_padel_tenis" })).toBe(false);
+  });
+
+  it("es false si no hay actividad", () => {
+    expect(debeDescontarClase(null)).toBe(false);
+    expect(debeDescontarClase(undefined)).toBe(false);
   });
 });

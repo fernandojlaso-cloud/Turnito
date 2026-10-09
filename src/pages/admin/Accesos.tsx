@@ -101,6 +101,11 @@ function ResultadoEscaneoCard({ resultado }: { resultado: EscaneoUI }) {
               ⚠️ Este cliente tiene datos médicos cargados — consultar ficha
             </span>
           )}
+          {resultado.sinClasesDisponibles && (
+            <span style={{ fontWeight: 700, fontSize: 14, color: "#8A5A00" }}>
+              ⚠️ Sin clases disponibles — avisale que se quedó sin clases compradas
+            </span>
+          )}
         </>
       )}
       {resultado.resultado.tipo === "ya_registrado" && (

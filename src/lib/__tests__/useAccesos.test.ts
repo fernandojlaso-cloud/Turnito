@@ -16,9 +16,13 @@ const clienteMock = {
   alergias: "Polen",
   condiciones_medicas: null,
   medicacion: null,
-  observaciones_medicas: null
+  observaciones_medicas: null,
+  clases_compradas: 5,
+  clases_usadas: 4
 };
-const actividadMock = { id: "actividad-1", nombre: "Pilates" };
+const actividadMock = { id: "actividad-1", nombre: "Pilates", categoria: "pilates" };
+
+const actualizacionesClientes: Record<string, unknown>[] = [];
 
 function tabla(nombre: string) {
   const datosPorTabla: Record<string, unknown> = { turnos: turnoMock, clientes: clienteMock, actividades: actividadMock };
@@ -28,7 +32,12 @@ function tabla(nombre: string) {
         maybeSingle: () => Promise.resolve({ data: datosPorTabla[nombre] })
       })
     }),
-    update: () => ({ eq: () => Promise.resolve({ data: null, error: null }) })
+    update: (cambios: Record<string, unknown>) => ({
+      eq: () => {
+        if (nombre === "clientes") actualizacionesClientes.push(cambios);
+        return Promise.resolve({ data: null, error: null });
+      }
+    })
   };
 }
 
@@ -39,7 +48,10 @@ vi.mock("../supabase", () => ({
 import { useAccesos } from "../useAccesos";
 
 describe("useAccesos.procesarQr", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    actualizacionesClientes.length = 0;
+  });
 
   it("devuelve ok con alertaMedica true cuando el cliente tiene datos médicos", async () => {
     const { result } = renderHook(() => useAccesos({ id: "centro-1" } as any));
@@ -48,5 +60,17 @@ describe("useAccesos.procesarQr", () => {
     expect(escaneo.clienteNombre).toBe("Ana Pérez");
     expect(escaneo.actividadNombre).toBe("Pilates");
     expect(escaneo.alertaMedica).toBe(true);
+  });
+
+  it("suma una clase usada en una actividad de pilates/clases grupales", async () => {
+    const { result } = renderHook(() => useAccesos({ id: "centro-1" } as any));
+    await result.current.procesarQr("turno-1");
+    expect(actualizacionesClientes).toEqual([{ clases_usadas: 5 }]);
+  });
+
+  it("avisa sin clases disponibles cuando las usadas llegan a las compradas", async () => {
+    const { result } = renderHook(() => useAccesos({ id: "centro-1" } as any));
+    const escaneo = await result.current.procesarQr("turno-1");
+    expect(escaneo.sinClasesDisponibles).toBe(true);
   });
 });

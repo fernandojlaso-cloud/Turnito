@@ -41,3 +41,14 @@ export function tieneAlertaMedica(cliente: ClienteParaAlerta): boolean {
     (valor) => !!valor && valor.trim().length > 0
   );
 }
+
+interface ActividadParaClases {
+  categoria: string | null;
+}
+
+/** Las clases compradas/usadas solo aplican a Pilates y clases
+ *  grupales — en consultorio médico, kinesiología, masajes, personal
+ *  trainer y canchas no se descuenta nada. */
+export function debeDescontarClase(actividad: ActividadParaClases | null | undefined): boolean {
+  return actividad?.categoria === "pilates" || actividad?.categoria === "clases_grupales";
+}
