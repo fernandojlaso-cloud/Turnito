@@ -74,6 +74,17 @@ export default function Profesionales({ centro }: { centro: Centro }) {
 
   const actual = profesionales.find((p) => p.id === selId) ?? null;
 
+  // Una cancha solo puede vincularse a actividades de categoría "canchas";
+  // un profesional humano, a cualquier otra. Esto evita vincular una cancha
+  // por error a actividades que no le corresponden (o al revés).
+  const actividadesParaVincular = useMemo(
+    () =>
+      actividades.filter((a) =>
+        actual?.es_cancha ? a.categoria === "canchas_futbol_padel_tenis" : a.categoria !== "canchas_futbol_padel_tenis"
+      ),
+    [actividades, actual]
+  );
+
   return (
     <AdminLayout centro={centro}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", justifyContent: "space-between", minHeight: 72 }}>
@@ -136,9 +147,11 @@ export default function Profesionales({ centro }: { centro: Centro }) {
               <DetalleProfesional profesional={actual} accent={centro.color_acento} onActualizar={actualizar} />
 
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted }}>ACTIVIDADES A CARGO</div>
+                <div style={{ fontFamily: font.mono, fontSize: 12, letterSpacing: "0.1em", color: color.textMuted }}>
+                  {actual?.es_cancha ? "ACTIVIDAD DE ESTA CANCHA" : "ACTIVIDADES A CARGO"}
+                </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {actividades.map((a) => {
+                  {actividadesParaVincular.map((a) => {
                     const asignado = vinculos.some((v) => v.profesional_id === selId && v.actividad_id === a.id);
                     return (
                       <button
@@ -151,7 +164,13 @@ export default function Profesionales({ centro }: { centro: Centro }) {
                       </button>
                     );
                   })}
-                  {!actividades.length && <p style={{ color: color.textMuted, fontSize: 14 }}>Todavía no hay actividades cargadas.</p>}
+                  {!actividadesParaVincular.length && (
+                    <p style={{ color: color.textMuted, fontSize: 14 }}>
+                      {actual?.es_cancha
+                        ? 'Todavía no hay ninguna actividad de categoría "Canchas de fútbol, pádel, tenis". Creala primero en Actividades.'
+                        : "Todavía no hay actividades cargadas."}
+                    </p>
+                  )}
                 </div>
                 {!!actividadesDeCentro.length && (
                   <p style={{ fontSize: 13, color: color.textMuted, margin: 0 }}>
