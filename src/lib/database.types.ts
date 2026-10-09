@@ -41,6 +41,7 @@ export interface Actividad {
   nombre: string;
   codigo: string;
   categoria: CategoriaActividad | null;
+  tipo_actividad: string | null;
   tipo: TipoActividad;
   duracion_min: number;
   cupo: number;

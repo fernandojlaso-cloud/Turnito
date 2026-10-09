@@ -39,6 +39,7 @@ export default function Actividades({ centro }: { centro: Centro }) {
     categoria: CategoriaActividad;
     tipo: "individual" | "grupal";
     duracion_min: number;
+    tipo_actividad: string | null;
   }) {
     const { data, error } = await supabase
       .from("actividades")
@@ -49,6 +50,7 @@ export default function Actividades({ centro }: { centro: Centro }) {
         categoria: datos.categoria,
         tipo: datos.tipo,
         duracion_min: datos.duracion_min,
+        tipo_actividad: datos.tipo_actividad,
         cupo: datos.categoria === "canchas_futbol_padel_tenis" ? 0 : datos.tipo === "grupal" ? 8 : 1,
         cancelacion_horas: 2,
         activa: true,
@@ -237,6 +239,15 @@ export default function Actividades({ centro }: { centro: Centro }) {
                   </p>
                 )}
               </Row>
+
+              {actual.categoria === "clases_grupales" && (
+                <Row label="TIPO DE ACTIVIDAD">
+                  <TipoActividadEditable key={actual.id} actividad={actual} onPatch={patch} />
+                  <p style={{ margin: "6px 0 0", fontSize: 12, color: color.textMuted }}>
+                    Ej. Localizada, Elongación, Zumba, Spinning. Se usa para mostrar qué clase es exactamente dentro de "Clases grupales".
+                  </p>
+                </Row>
+              )}
 
               <FotoYDireccion key={actual.id} actividad={actual} onPatch={patch} />
 
@@ -442,6 +453,7 @@ function NuevaActividadForm({
     categoria: CategoriaActividad;
     tipo: "individual" | "grupal";
     duracion_min: number;
+    tipo_actividad: string | null;
   }) => Promise<boolean>;
   accent: string;
 }) {
@@ -478,7 +490,8 @@ function NuevaActividadForm({
       codigo: codigo.trim().toUpperCase(),
       categoria,
       tipo: esCanchas ? "grupal" : tipo,
-      duracion_min: duracion
+      duracion_min: duracion,
+      tipo_actividad: esClasesGrupales ? subNombre.trim() || null : null
     });
     setGuardando(false);
     if (!ok) setError("No se pudo crear la actividad. Probá de nuevo.");
@@ -508,10 +521,10 @@ function NuevaActividadForm({
         {esClasesGrupales && (
           <Field
             id="na-sub"
-            label="¿Qué tipo de clase?"
+            label="Tipo de actividad"
             value={subNombre}
             onChange={(e) => setSubNombre(e.target.value)}
-            placeholder="Ej. Aeróbica, HIT, Funcional"
+            placeholder="Ej. Localizada, Elongación, Zumba"
           />
         )}
 
@@ -620,6 +633,32 @@ function FotoYDireccion({
         if (direccion !== (actividad.direccion ?? "")) onPatch(actividad.id, { direccion: direccion.trim() || null });
       }}
       placeholder="Ej. Av. Cabildo 2450, Sala 2"
+    />
+  );
+}
+
+function TipoActividadEditable({
+  actividad,
+  onPatch
+}: {
+  actividad: Actividad;
+  onPatch: (id: string, cambios: Partial<Actividad>) => Promise<void>;
+}) {
+  const [valor, setValor] = useState(actividad.tipo_actividad ?? "");
+
+  return (
+    <Field
+      id="tipo-actividad"
+      label=""
+      value={valor}
+      onChange={(e) => setValor(e.target.value)}
+      onBlur={() => {
+        const limpio = valor.trim();
+        if (limpio !== (actividad.tipo_actividad ?? "")) {
+          onPatch(actividad.id, { tipo_actividad: limpio || null, nombre: nombreDesdeCategoria("clases_grupales", limpio) });
+        }
+      }}
+      placeholder="Ej. Localizada, Elongación, Zumba"
     />
   );
 }

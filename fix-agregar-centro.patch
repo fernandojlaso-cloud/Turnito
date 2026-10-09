@@ -1,0 +1,70 @@
+diff --git a/src/lib/useDirector.ts b/src/lib/useDirector.ts
+index 9fcfedb..227f1cd 100644
+--- a/src/lib/useDirector.ts
++++ b/src/lib/useDirector.ts
+@@ -48,6 +48,7 @@ export function useSesionDirector() {
+ export function useCentrosDirector() {
+   const [centros, setCentros] = useState<Centro[]>([]);
+   const [cargando, setCargando] = useState(true);
++  const [error, setError] = useState<string | null>(null);
+ 
+   async function recargar() {
+     setCargando(true);
+@@ -70,6 +71,7 @@ export function useCentrosDirector() {
+   }
+ 
+   async function crear(nombre: string): Promise<string | null> {
++    setError(null);
+     const slugBase = slugify(nombre);
+     let slug = slugBase;
+     let intento = 1;
+@@ -80,12 +82,19 @@ export function useCentrosDirector() {
+       intento += 1;
+       slug = `${slugBase}-${intento}`;
+     }
+-    const { data, error } = await supabase
++    const { data, error: e } = await supabase
+       .from("centros")
+       .insert({ nombre, slug, color_acento: "#FFD400", plan_activo: true })
+       .select()
+       .single();
+-    if (error || !data) return null;
++    if (e || !data) {
++      setError(
++        e?.message.includes("duplicate")
++          ? "Ya existe un centro con ese nombre."
++          : `No se pudo crear el centro (${e?.message ?? "sin datos"}).`
++      );
++      return null;
++    }
+     await recargar();
+     return (data as Centro).id;
+   }
+@@ -103,5 +112,5 @@ export function useCentrosDirector() {
+     await actualizar(id, { aprobado: true });
+   }
+ 
+-  return { centros, cargando, crear, actualizar, alternarPlan, aprobar };
++  return { centros, cargando, error, crear, actualizar, alternarPlan, aprobar };
+ }
+diff --git a/src/pages/director/Centros.tsx b/src/pages/director/Centros.tsx
+index 7651ddd..7d22e2d 100644
+--- a/src/pages/director/Centros.tsx
++++ b/src/pages/director/Centros.tsx
+@@ -9,7 +9,7 @@ import { cerrarSesion } from "@/components/Bloqueo";
+ const { color, font } = tokens;
+ 
+ export default function Centros() {
+-  const { centros, cargando, crear, actualizar, alternarPlan, aprobar } = useCentrosDirector();
++  const { centros, cargando, error, crear, actualizar, alternarPlan, aprobar } = useCentrosDirector();
+   const [nombreNuevo, setNombreNuevo] = useState("");
+   const [creando, setCreando] = useState(false);
+   const [selId, setSelId] = useState<string | null>(null);
+@@ -68,6 +68,7 @@ export default function Centros() {
+           >
+             {creando ? "Creando…" : "+ Agregar centro"}
+           </button>
++          {error && <p style={{ color: "#E8817D", fontSize: 13, margin: 0 }}>{error}</p>}
+         </form>
+ 
+         <div style={{ display: "flex", flexDirection: "column", gap: 6, overflowY: "auto" }}>

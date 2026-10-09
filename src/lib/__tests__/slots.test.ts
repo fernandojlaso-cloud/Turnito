@@ -9,6 +9,7 @@ function actividadBase(overrides: Partial<Actividad> = {}): Actividad {
     nombre: "Actividad 1",
     codigo: "A1",
     categoria: null,
+    tipo_actividad: null,
     tipo: "individual",
     duracion_min: 60,
     cupo: 1,
