@@ -38,7 +38,7 @@ export default function Clientes({ centro }: { centro: Centro }) {
       setTurnos((ts ?? []) as Turno[]);
       setActividades((acts ?? []) as Actividad[]);
       setProfesionales((pros ?? []) as Profesional[]);
-      setSelId(cs[0]?.id ?? null);
+      setSelId(modo === "escritorio" ? cs[0]?.id ?? null : null);
     }
     cargar();
     // eslint-disable-next-line react-hooks/exhaustive-deps

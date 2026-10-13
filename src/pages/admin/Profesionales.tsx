@@ -32,7 +32,7 @@ export default function Profesionales({ centro }: { centro: Centro }) {
   }
 
   useEffect(() => {
-    recargar().then((pros) => setSelId(pros[0]?.id ?? null));
+    recargar().then((pros) => setSelId(modo === "escritorio" ? pros[0]?.id ?? null : null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [centro.id]);
 

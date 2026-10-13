@@ -33,7 +33,7 @@ export default function Actividades({ centro }: { centro: Centro }) {
       setDisponibilidad(disp ?? []);
       setProfesionales((pros ?? []) as Profesional[]);
       setVinculos((rel ?? []) as { actividad_id: string; profesional_id: string }[]);
-      setSelId((acts ?? [])[0]?.id ?? null);
+      setSelId(modo === "escritorio" ? (acts ?? [])[0]?.id ?? null : null);
       setCreando(!(acts ?? []).length);
     }
     cargar();
