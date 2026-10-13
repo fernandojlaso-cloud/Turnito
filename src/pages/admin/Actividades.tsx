@@ -153,7 +153,7 @@ export default function Actividades({ centro }: { centro: Centro }) {
       <MaestroDetalle
         hayDetalle={creando || !!actual}
         onVolver={() => {
-          setCreando(!!actividades.length);
+          setCreando(!actividades.length);
           setSelId(null);
         }}
         lista={
