@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        from: "Turnito <turnos@RELLENAR-CON-EL-DOMINIO-VERIFICADO>",
+        from: "Turnito <turnos@turnitoapp.com.ar>",
         to: cliente.email,
         subject,
         html,
