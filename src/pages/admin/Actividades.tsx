@@ -57,7 +57,7 @@ export default function Actividades({ centro }: { centro: Centro }) {
         tipo: datos.tipo,
         duracion_min: datos.duracion_min,
         tipo_actividad: datos.tipo_actividad,
-        cupo: datos.categoria === "canchas_futbol_padel_tenis" ? 0 : datos.tipo === "grupal" ? 8 : 1,
+        cupo: datos.categoria === "canchas_futbol_padel_tenis" ? 1 : datos.tipo === "grupal" ? 8 : 1,
         cancelacion_horas: 2,
         activa: true,
         orden: actividades.length
@@ -323,17 +323,15 @@ export default function Actividades({ centro }: { centro: Centro }) {
                 </div>
               </Row>
 
-              {actual.tipo === "grupal" && actual.categoria !== "canchas_futbol_padel_tenis" && (
-                <Row label="CUPO POR TURNO">
-                  <Stepper value={actual.cupo} min={2} max={40} onChange={(v) => patch(actual.id, { cupo: v })} suffix="personas" />
-                </Row>
-              )}
-
-              {actual.categoria === "canchas_futbol_padel_tenis" && (
-                <Row label="CANCHAS DISPONIBLES POR TURNO">
-                  <p style={{ margin: 0, fontSize: 14, color: color.textSoft }}>
-                    {actual.cupo} {actual.cupo === 1 ? "cancha vinculada y activa" : "canchas vinculadas y activas"}. Se calcula solo: para sumar o quitar canchas, entrá a "Profesionales".
-                  </p>
+              {actual.tipo === "grupal" && (
+                <Row label={actual.categoria === "canchas_futbol_padel_tenis" ? "CANCHAS DISPONIBLES POR TURNO" : "CUPO POR TURNO"}>
+                  <Stepper
+                    value={actual.cupo}
+                    min={actual.categoria === "canchas_futbol_padel_tenis" ? 1 : 2}
+                    max={40}
+                    onChange={(v) => patch(actual.id, { cupo: v })}
+                    suffix={actual.categoria === "canchas_futbol_padel_tenis" ? "canchas" : "personas"}
+                  />
                 </Row>
               )}
 

@@ -56,19 +56,8 @@ export default function Profesionales({ centro }: { centro: Centro }) {
   }
 
   async function actualizar(id: string, cambios: Partial<Profesional>) {
-    const nuevosProfesionales = profesionales.map((p) => (p.id === id ? { ...p, ...cambios } : p));
-    setProfesionales(nuevosProfesionales);
+    setProfesionales((prev) => prev.map((p) => (p.id === id ? { ...p, ...cambios } : p)));
     await supabase.from("profesionales").update(cambios).eq("id", id);
-
-    if ("activo" in cambios) {
-      const profesional = nuevosProfesionales.find((p) => p.id === id);
-      if (profesional?.es_cancha) {
-        const actividadesVinculadas = vinculos.filter((v) => v.profesional_id === id).map((v) => v.actividad_id);
-        for (const actividadId of actividadesVinculadas) {
-          await sincronizarCupoCancha(actividadId, nuevosProfesionales, vinculos);
-        }
-      }
-    }
   }
 
   async function toggleActividad(actividadId: string) {
@@ -84,33 +73,6 @@ export default function Profesionales({ centro }: { centro: Centro }) {
     } else {
       await supabase.from("actividad_profesionales").insert({ profesional_id: selId, actividad_id: actividadId });
     }
-
-    // Para canchas, el cupo no se escribe a mano: se recalcula solo, según
-    // cuántas canchas activas quedaron vinculadas a esta actividad.
-    await sincronizarCupoCancha(actividadId, profesionales, nuevosVinculos);
-  }
-
-  function contarCanchasActivas(
-    actividadId: string,
-    profesionalesActuales: Profesional[],
-    vinculosActuales: { actividad_id: string; profesional_id: string }[]
-  ) {
-    return profesionalesActuales.filter(
-      (p) => p.es_cancha && p.activo && vinculosActuales.some((v) => v.actividad_id === actividadId && v.profesional_id === p.id)
-    ).length;
-  }
-
-  async function sincronizarCupoCancha(
-    actividadId: string,
-    profesionalesActuales: Profesional[],
-    vinculosActuales: { actividad_id: string; profesional_id: string }[]
-  ) {
-    const actividad = actividades.find((a) => a.id === actividadId);
-    if (!actividad || actividad.categoria !== "canchas_futbol_padel_tenis") return;
-    const nuevoCupo = contarCanchasActivas(actividadId, profesionalesActuales, vinculosActuales);
-    if (nuevoCupo === actividad.cupo) return;
-    setActividades((prev) => prev.map((a) => (a.id === actividadId ? { ...a, cupo: nuevoCupo } : a)));
-    await supabase.from("actividades").update({ cupo: nuevoCupo }).eq("id", actividadId);
   }
 
   const actual = profesionales.find((p) => p.id === selId) ?? null;
