@@ -108,8 +108,14 @@ export default function Registro() {
       <Centrado>
         <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>¡Listo!</h1>
         <p style={{ marginTop: 12, fontSize: 15, color: color.textSoft, lineHeight: 1.6 }}>
-          Creamos tu cuenta y tu centro <strong>{nombreCentro}</strong>. Está pendiente de aprobación — en cuanto lo
-          activemos vas a poder entrar a tu panel con el email y la contraseña que acabás de crear.
+          Creamos tu cuenta y tu centro <strong>{nombreCentro}</strong>. Está pendiente de aprobación — en cuanto te
+          avisemos por mail que ya está activo, vas a poder entrar a tu panel con el email y la contraseña que
+          acabás de crear, desde:
+        </p>
+        <p style={{ marginTop: 8, fontSize: 15 }}>
+          <a href="/admin" style={{ color: color.ink, fontWeight: 700 }}>
+            turnito-rouge.vercel.app/admin
+          </a>
         </p>
       </Centrado>
     );
