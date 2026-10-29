@@ -103,7 +103,7 @@ export default function Centros() {
                     borderRadius: "50%",
                     background: !c.aprobado ? "#D98A00" : c.plan_activo ? "#2E9E5B" : "#8A1418"
                   }}
-                  title={!c.aprobado ? "Pendiente de aprobación" : c.plan_activo ? "Activo" : "Dado de baja"}
+                  title={!c.aprobado ? "Bloqueado por límite de reservas" : c.plan_activo ? "Activo" : "Dado de baja"}
                 />
               </button>
             );
@@ -203,15 +203,15 @@ function DetalleCentro({
             color: !centro.aprobado ? "#8A5A00" : centro.plan_activo ? "#1E7A46" : "#8A1418"
           }}
         >
-          {!centro.aprobado ? "Pendiente de aprobación" : centro.plan_activo ? "Activo" : "Dado de baja"}
+          {!centro.aprobado ? "Bloqueado por límite" : centro.plan_activo ? "Activo" : "Dado de baja"}
         </span>
       </div>
 
       {!centro.aprobado && (
         <section style={{ background: "#FCEBD5", border: "1px solid #E8C88A", borderRadius: 20, padding: 24, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
           <p style={{ margin: 0, fontSize: 14, color: "#5C4300", lineHeight: 1.6 }}>
-            Este centro se registró solo y todavía no puede operar. Revisá el nombre y, si te parece legítimo,
-            aprobalo para que el dueño pueda entrar a su panel.
+            Este centro llegó al límite de 50 turnos de la prueba y su panel se bloqueó automáticamente. Revisalo y,
+            si corresponde, aprobalo para que el dueño pueda seguir operando.
           </p>
           <button
             onClick={aprobarCentro}

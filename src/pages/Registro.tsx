@@ -68,7 +68,13 @@ export default function Registro() {
     const slug = slugify(nombreCentro);
     const { data: centro, error: centroError } = await supabase
       .from("centros")
-      .insert({ nombre: nombreCentro.trim(), slug, telefono_whatsapp: telefonoWhatsapp.trim(), aprobado: false })
+      .insert({
+        nombre: nombreCentro.trim(),
+        slug,
+        telefono_whatsapp: telefonoWhatsapp.trim(),
+        aprobado: true,
+        creado_por: authData.session.user.id
+      })
       .select()
       .single();
 
@@ -108,9 +114,8 @@ export default function Registro() {
       <Centrado>
         <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>¡Listo!</h1>
         <p style={{ marginTop: 12, fontSize: 15, color: color.textSoft, lineHeight: 1.6 }}>
-          Creamos tu cuenta y tu centro <strong>{nombreCentro}</strong>. Está pendiente de aprobación — en cuanto te
-          avisemos por mail que ya está activo, vas a poder entrar a tu panel con el email y la contraseña que
-          acabás de crear, desde:
+          Creamos tu cuenta y tu centro <strong>{nombreCentro}</strong>, y ya está activo. Entrá a tu panel con el
+          email y la contraseña que acabás de crear, desde:
         </p>
         <p style={{ marginTop: 8, fontSize: 15 }}>
           <a href="/admin" style={{ color: color.ink, fontWeight: 700 }}>
@@ -148,7 +153,7 @@ export default function Registro() {
             </div>
             <h1 style={{ margin: 0, fontFamily: font.display, fontWeight: 600, fontSize: 26 }}>Sumá tu centro</h1>
             <p style={{ marginTop: 8, fontSize: 14, color: color.textSoft }}>
-              Creá tu cuenta para empezar a usar Turnito. Tu centro queda pendiente de aprobación.
+              Creá tu cuenta para empezar a usar Turnito. Tu centro queda activo al instante.
             </p>
           </div>
           <LogoPicker label="Logo de tu centro (opcional)" preview={logoPreview} onFile={elegirLogo} />

@@ -22,6 +22,8 @@ export interface Centro {
   color_acento: string;
   plan_activo: boolean;
   aprobado: boolean;
+  creado_por: string | null;
+  limite_50_aplicado: boolean;
   creado_en: string;
 }
 

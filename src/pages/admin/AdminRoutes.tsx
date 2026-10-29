@@ -30,7 +30,12 @@ export default function AdminRoutes() {
   }
 
   if (!centro.aprobado) {
-    return <Bloqueo>Tu centro todavía está pendiente de aprobación. Te vamos a avisar en cuanto quede activo.</Bloqueo>;
+    return (
+      <Bloqueo>
+        Tu centro alcanzó el límite de turnos de la prueba y el panel quedó bloqueado. Ya avisamos para que lo
+        revisen — te vamos a escribir en cuanto esté listo para que sigas usándolo.
+      </Bloqueo>
+    );
   }
 
   if (!centro.plan_activo) {

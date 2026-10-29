@@ -11,11 +11,11 @@ Deno.serve(async (req) => {
       id: string;
       nombre: string;
       telefono_whatsapp: string | null;
-      aprobado: boolean;
+      creado_por: string | null;
     };
 
-    if (!centro || centro.aprobado) {
-      // Ya viene aprobado (ej. alta manual) => no hay nada que avisar.
+    if (!centro || !centro.creado_por) {
+      // Lo creó el director a mano desde /director => no hay nada que avisar.
       return new Response("ok", { status: 200 });
     }
 
